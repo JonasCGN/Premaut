@@ -5,7 +5,7 @@ import Link from "next/link";
 import "./styles.css";
 
 
-export default function cadastro() {
+export default function Cadastro() {
   const [nome, setNome] = useState("");
   const [senha, setSenha] = useState("");
   const [genero, setGenero] = useState("");
@@ -105,7 +105,7 @@ export default function cadastro() {
           </div>
 
                 <button type="submit" className="botao-salvar">
-                  <Link href="./Login">
+                  <Link href="/pages/login">
                     Cadastrar
                   </Link>
                 </button>
