@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import TopBar from '../../../components/TopBar';
+import TopBar from '../components/TopBar';
 
 export default function ScreenFamilly() {
   return (
@@ -32,10 +32,10 @@ export default function ScreenFamilly() {
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-semibold text-gray-800">
-                  Nome do Familiar
+                  Nome do Paciente
                 </h2>
-                <span className="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
-                  Familiar
+                <span className="text-sm bg-[#DFEDFF]  text-[#6D94C5] px-3 py-1 rounded-full">
+                  Paciente
                 </span>
               </div>
               <span className="text-xs text-gray-500 mt-1 block">
@@ -43,9 +43,9 @@ export default function ScreenFamilly() {
               </span>
             </div>
 
-            <button className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-emerald-400 text-emerald-700 rounded-full px-4 py-2 text-sm hover:bg-emerald-50 transition">
+            <button className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-[#6D94C5] text-[#6D94C5] rounded-full px-4 py-2 text-sm hover:bg-[#DFEDFF] transition">
               <img
-                src="/assets/images/lapis.png"
+                src="/assets/images/pencialazul.svg"
                 alt="Editar"
                 className="w-4 h-4"
               />
@@ -57,7 +57,7 @@ export default function ScreenFamilly() {
         {/* Blocos de informações */}
         <section className="grid md:grid-cols-2 gap-8 mb-10">
           {/* Informações básicas */}
-          <div className="border border-emerald-200 rounded-xl p-6">
+          <div className="border border-[#6D94C5] rounded-xl p-6">
             <h3 className="font-semibold text-gray-700 mb-3">Informações básicas</h3>
             <ul className="text-sm text-gray-600 space-y-3">
               <li className="flex items-center gap-2">
@@ -104,7 +104,7 @@ export default function ScreenFamilly() {
           </div>
 
           {/* Informações de suporte */}
-          <div className="border border-emerald-200 rounded-xl p-6">
+          <div className="border border-[#6D94C5] rounded-xl p-6">
             <h3 className="font-semibold text-gray-700 mb-3">Informações de suporte</h3>
             <ul className="text-sm text-gray-600 space-y-2">
               <li>
@@ -134,8 +134,8 @@ export default function ScreenFamilly() {
 
         {/* Gráfico e estatísticas - layout em duas colunas */}
         <section
-          className="border border-emerald-200 rounded-xl p-8 mb-10 grid md:grid-cols-2 gap-6 items-center"
-          style={{ backgroundColor: 'rgb(210, 233, 223)' }}
+          className="border border-[#6D94C5] rounded-xl p-8 mb-10 grid md:grid-cols-2 gap-6 items-center"
+          style={{ backgroundColor: 'rgb(165, 187, 215)' }}
         >
           {/* Coluna Esquerda - dados */}
           <div className="flex flex-col items-center md:items-start">
@@ -169,10 +169,23 @@ export default function ScreenFamilly() {
         <section>
           <h3
             className="text-lg font-semibold text-gray-700 mb-4 px-2 py-1 rounded-md"
-            style={{ backgroundColor: 'rgb(210, 233, 223)' }}
+            style={{ backgroundColor: 'rgb(165, 187, 215)' }}
           >
             Relatórios
           </h3>
+
+          <div className="flex justify-end">
+            {/* Botão Adicionar */}
+            <button className="flex items-center gap-2 mb-5 bg-[#a5bbd7] text-[#4A4A4A] px-5 py-3 rounded-[15.82px] font-medium shadow-md hover:bg-[#CCD9EA] transition">
+                <img
+                    src="/assets/images/pencialcinza.svg"
+                    alt="Adicionar"
+                    className="w-5 h-5"
+                />
+                Adicionar
+            </button>
+          </div>
+
 
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (

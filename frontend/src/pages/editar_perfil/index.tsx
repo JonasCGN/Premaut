@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
+import TopBar from "../../components/TopBar";
 import "./styles.css";
 
-
-export default function cadastro() {
+export default function EditarPerfil() {
   const [nome, setNome] = useState("");
-  const [senha, setSenha] = useState("");
   const [genero, setGenero] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [nascimento, setNascimento] = useState("");
-    const [confirmarSenha, setConfirmarSenha] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +20,21 @@ export default function cadastro() {
   return (
     <div className="editar-perfil-container">
      
-      <div className="logo-icon"></div>
-      
-      <div className="perfil-card">
+    <div
+      className="topbar-wrapper"
+    >
+      <img src="/assets/images/solar_heart-broken.svg" alt="Coração" className="h-10 w-10" />
+      <span className="premautTitle" style={{ marginLeft: 8 }}>PREMAUT</span>
+    </div>
 
+
+      <div className="perfil-card">
+      <button className="voltar" onClick={() => window.history.back()}>
+        <img src="/assets/images/mdi_arrow-up.svg" alt="Voltar" width="32" />
+      </button>
+
+
+      
         <div className="icone-perfil">
           <img src="/assets/images/mdi_user.svg" alt="Perfil" />
         </div>
@@ -50,26 +58,8 @@ export default function cadastro() {
                 onChange={(e) => setTelefone(e.target.value)}
               />
             </div>
-                  <div className="linha">
-                    <div className="campo">
-                      <label>Senha</label>
-                      <input
-                        type="password"
-                        value={senha}
-                        onChange={(e) => setSenha(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="campo">
-                      <label>Confirmar Senha</label>
-                      <input
-                        type="password"
-                        value={confirmarSenha}
-                        onChange={(e) => setConfirmarSenha(e.target.value)}
-                      />
-                    </div>
-                  </div>
           </div>
+
           <div className="linha">
             <div className="campo">
               <label>Gênero</label>
@@ -104,12 +94,11 @@ export default function cadastro() {
             </div>
           </div>
 
-                <button type="submit" className="botao-salvar">
-                  <Link href="./Login">
-                    Cadastrar
-                  </Link>
-                </button>
+          <button type="submit" className="botao-salvar">
+            Salvar
+          </button>
 
+         
         </form>
       </div>
     </div>
