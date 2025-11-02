@@ -19,3 +19,5 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=production
+      
+  # Supabase service for production

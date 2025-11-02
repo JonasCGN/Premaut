@@ -1,0 +1,13 @@
+studio: 10000:3000
+kong: 8000:8000 (HTTP), 8443:8443 (HTTPS)
+auth: 9999:9999
+rest: 3000:3000
+realtime: 4000:4000
+storage: 5000:5000
+imgproxy: 5001:5001
+meta: 8080:8080
+functions: 54321:54321
+analytics: 4001:4000
+db: 5432:5432
+vector: 9001:9001
+supavisor: 4002:4000
