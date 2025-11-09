@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import exampleController from '../controllers/exampleController';
+import eventoRoutes from './eventoRoutes';
+import pacienteRoutes from './pacienteRoutes';
 
 const router = Router();
 
-router.get('/hello', exampleController.hello);
+router.use('/eventos', eventoRoutes);
+router.use('/pacientes', pacienteRoutes);
 
 export default router;
