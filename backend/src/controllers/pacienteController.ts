@@ -1,43 +1,33 @@
 import { Request, Response } from "express";
-import {
-  criarPaciente,
-  listarPacientes,
-  buscarPacientePorId,
-  deletarPaciente,
-} from "../models/pacienteModel";
+import { supabase } from "../lib/supabaseClient";
 
-export async function postPaciente(req: Request, res: Response) {
-  try {
-    const paciente = await criarPaciente(req.body);
-    res.status(201).json(paciente);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-}
+export const getPacientes = async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from("pacientes").select("*");
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+};
 
-export async function getPacientes(req: Request, res: Response) {
-  try {
-    const pacientes = await listarPacientes();
-    res.status(200).json(pacientes);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-}
+export const getPacientePorId = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { data, error } = await supabase.from("pacientes").select("*").eq("id", id).single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+};
 
-export async function getPacientePorId(req: Request, res: Response) {
-  try {
-    const paciente = await buscarPacientePorId(req.params.id);
-    res.status(200).json(paciente);
-  } catch (error: any) {
-    res.status(404).json({ error: error.message });
-  }
-}
+export const postPaciente = async (req: Request, res: Response) => {
+  const { nome, genero, nivel_suporte, nascimento, comodidade, telefone, email, remedios, estereotipia, reforco_positivo, reforco_negativo } = req.body;
 
-export async function deletePaciente(req: Request, res: Response) {
-  try {
-    const result = await deletarPaciente(req.params.id);
-    res.status(200).json(result);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-}
+  const { data, error } = await supabase.from("pacientes").insert([
+    { nome, genero, nivel_suporte, nascimento, comodidade, telefone, email, remedios, estereotipia, reforco_positivo, reforco_negativo },
+  ]);
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+};
+
+export const deletePaciente = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { error } = await supabase.from("pacientes").delete().eq("id", id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ message: "Paciente deletado com sucesso" });
+};
