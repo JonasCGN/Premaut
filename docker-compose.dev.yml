@@ -13,11 +13,26 @@ services:
       NODE_ENV: development
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
+    env_file:
+      - .env
     ulimits:
       nproc: 65535
       nofile:
         soft: 65536
         hard: 65536
+  
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    command: npm test
+    depends_on:
+      - backend
 
 
   backend-test:
@@ -49,6 +64,8 @@ services:
       WATCHPACK_POLLING: "true"
       NEXT_PRIVATE_NO_TURBOPACK: "1"
       NEXT_TELEMETRY_DISABLED: "1"
+    env_file:
+      - .env
     ulimits:
       nproc: 65535
       nofile:
