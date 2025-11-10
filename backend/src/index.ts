@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import routes from "./routes/index";
+import eventoRoutes from './routes/eventoRoutes';
+import pacienteRoutes from './routes/pacienteRoutes';
 
 const app = express();
 
@@ -12,7 +14,8 @@ app.use(cors({
 
 app.use(express.json());
 
-app.use("/api", routes);
+app.use('/api/eventos', eventoRoutes);
+app.use('/api/pacientes', pacienteRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
