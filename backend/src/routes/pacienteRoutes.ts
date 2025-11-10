@@ -8,9 +8,9 @@ import {
 
 const router = Router();
 
-router.get("/pacientes", getPacientes);
-router.get("/pacientes/:id", getPacientePorId);
-router.post("/pacientes", postPaciente);
-router.delete("/pacientes/:id", deletePaciente);
+router.get("/", getPacientes);
+router.get("/:id", getPacientePorId);
+router.post("/", postPaciente);
+router.delete("/:id", deletePaciente);
 
 export default router;

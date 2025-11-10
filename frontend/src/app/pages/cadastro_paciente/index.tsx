@@ -14,7 +14,7 @@ import "./styles.css";
 const API_BASE =
     (process.env.NEXT_PUBLIC_API_URL as string) ||
     (process.env.REACT_APP_API_URL as string) ||
-    "http://localhost:3000";
+    "http://localhost:3001";
 
 export default function CadastroEvento() {
     const [genero, setGenero] = useState("");
@@ -40,25 +40,23 @@ export default function CadastroEvento() {
 
         try {
             const resposta = await fetch(`${API_BASE}/api/pacientes`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                // ajuste o payload conforme a estrutura esperada pelo backend
-                body: JSON.stringify({
-                    nome,
-                    genero,
-                    nivel_suporte: suporte,
-                    nascimento,
-                    comodidade,
-                    telefone,
-                    email,
-                    remedios,
-                    estereotipia,
-                    reforco_positivo: reforcoPositivo,
-                    reforco_negativo: reforcoNegativo,
-                }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                nome,
+                genero,
+                nivel_suporte: suporte,
+                nascimento,
+                comodidade,
+                telefone,
+                email,
+                remedios,
+                estereotipia,
+                reforco_positivo: reforcoPositivo,
+                reforco_negativo: reforcoNegativo,
+            }),
             });
+
 
             // se o backend devolver um erro, tenta ler o corpo para mensagem
             if (!resposta.ok) {
