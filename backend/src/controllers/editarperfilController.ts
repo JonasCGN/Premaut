@@ -3,15 +3,34 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 export const usuarioController = (supabase: SupabaseClient) => {
   return {
+    /**
+     * GET /api/usuarios/me
+     * Busca perfil do usuário autenticado
+     */
     async buscarPerfil(req: Request, res: Response) {
       try {
-        // pega e-mail da query ou usa um teste temporário
-        const email = (req.query.email as string) || "teste@exemplo.com";
+        // Obtém o token do header Authorization
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          return res.status(401).json({ message: "Token não fornecido." });
+        }
 
+        const token = authHeader.replace("Bearer ", "");
+
+        // Valida o token com Supabase Auth
+        const { data: userData, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !userData?.user) {
+          return res.status(401).json({ message: "Token inválido ou expirado." });
+        }
+
+        const userEmail = userData.user.email;
+
+        // Busca dados do usuário na tabela usuarios
         const { data, error } = await supabase
           .from("usuarios")
           .select("nome, genero, telefone, email, nascimento")
-          .eq("email", email)
+          .eq("email", userEmail)
           .maybeSingle();
 
         if (error) {
@@ -30,23 +49,49 @@ export const usuarioController = (supabase: SupabaseClient) => {
       }
     },
 
+    /**
+     * PUT /api/usuarios/me
+     * Atualiza perfil do usuário autenticado
+     */
     async atualizarPerfil(req: Request, res: Response) {
       try {
-        const { nome, genero, telefone, email, nascimento } = req.body;
-
-        if (!email) {
-          return res.status(400).json({ message: "O campo 'email' é obrigatório." });
+        // Obtém o token do header Authorization
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          return res.status(401).json({ message: "Token não fornecido." });
         }
 
+        const token = authHeader.replace("Bearer ", "");
+
+        // Valida o token com Supabase Auth
+        const { data: userData, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !userData?.user) {
+          return res.status(401).json({ message: "Token inválido ou expirado." });
+        }
+
+        const userEmail = userData.user.email;
+
+        // Extrai apenas os campos permitidos para atualização
+        const { nome, genero, telefone, nascimento } = req.body;
+
+        // Monta objeto com apenas os campos que foram enviados
+        const updateData: any = {};
+        if (nome !== undefined) updateData.nome = nome;
+        if (genero !== undefined) updateData.genero = genero;
+        if (telefone !== undefined) updateData.telefone = telefone;
+        if (nascimento !== undefined) updateData.nascimento = nascimento;
+
+        // Verifica se há algo para atualizar
+        if (Object.keys(updateData).length === 0) {
+          return res.status(400).json({ message: "Nenhum campo para atualizar." });
+        }
+
+        // Atualiza apenas o usuário autenticado
         const { data, error } = await supabase
           .from("usuarios")
-          .update({
-            nome,
-            genero,
-            telefone,
-            nascimento,
-          })
-          .eq("email", email)
+          .update(updateData)
+          .eq("email", userEmail)
           .select()
           .maybeSingle();
 

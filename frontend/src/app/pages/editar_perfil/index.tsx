@@ -8,7 +8,6 @@ const API_BASE =
   (process.env.REACT_APP_API_URL as string) ||
   "http://localhost:3001";
 
-// Ajuste para o endpoint que retorna os dados do usuário autenticado
 const PERFIL_ROUTE = "/api/usuarios/me";
 
 async function safeJson(res: Response) {
@@ -22,7 +21,7 @@ async function safeJson(res: Response) {
 
 function formatToInputDate(value?: string) {
   if (!value) return "";
-  // aceita ISO com hora (ex: 2023-05-01T00:00:00.000Z) ou já yyyy-mm-dd
+  // Aceita ISO com hora (ex: 2023-05-01T00:00:00.000Z) ou já yyyy-mm-dd
   const d = value.split("T")[0];
   return d;
 }
@@ -35,18 +34,27 @@ export default function EditarPerfil() {
   const [nascimento, setNascimento] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     async function fetchPerfil() {
       setInitialLoading(true);
+      setError(null);
+      
       try {
         const token = localStorage.getItem("token");
+        
+        if (!token) {
+          window.location.href = "/login";
+          return;
+        }
+
         const res = await fetch(`${API_BASE}${PERFIL_ROUTE}`, {
           method: "GET",
           headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -60,6 +68,7 @@ export default function EditarPerfil() {
 
         if (!res.ok) {
           console.error("Erro ao buscar perfil:", dados);
+          setError(dados.message || "Erro ao carregar perfil");
           return;
         }
 
@@ -70,8 +79,11 @@ export default function EditarPerfil() {
         setTelefone(dados.telefone || "");
         setEmail(dados.email || "");
         setNascimento(formatToInputDate(dados.nascimento));
-      } catch (err) {
+      } catch (err: any) {
         console.error("Falha ao carregar perfil:", err);
+        if (mounted) {
+          setError("Falha ao conectar com o servidor");
+        }
       } finally {
         if (mounted) setInitialLoading(false);
       }
@@ -86,21 +98,29 @@ export default function EditarPerfil() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+    
     setLoading(true);
+    setError(null);
 
     try {
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      // Envia apenas campos editáveis (NÃO inclui email)
       const res = await fetch(`${API_BASE}${PERFIL_ROUTE}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           nome,
           genero,
           telefone,
-          email,
           nascimento,
         }),
       });
@@ -121,7 +141,9 @@ export default function EditarPerfil() {
       console.log("Perfil atualizado:", dados);
     } catch (erro: any) {
       console.error("Erro ao atualizar perfil:", erro);
-      alert(`❌ Falha ao atualizar perfil. ${erro?.message || ""}`);
+      const errorMsg = erro?.message || "Erro desconhecido";
+      setError(errorMsg);
+      alert(`❌ Falha ao atualizar perfil. ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -169,6 +191,12 @@ export default function EditarPerfil() {
           <img src="/assets/images/mdi_user.svg" alt="Perfil" />
         </div>
 
+        {error && (
+          <div style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>
+            {error}
+          </div>
+        )}
+
         <form className="form-perfil" onSubmit={handleSubmit}>
           <div className="linha">
             <div className="campo">
@@ -200,6 +228,7 @@ export default function EditarPerfil() {
                 <option value="">Selecione</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Feminino">Feminino</option>
+                <option value="Outro">Outro</option>
               </select>
             </div>
 
@@ -221,7 +250,9 @@ export default function EditarPerfil() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@exemplo.com"
-                required
+                disabled
+                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                title="O e-mail não pode ser alterado"
               />
             </div>
           </div>
