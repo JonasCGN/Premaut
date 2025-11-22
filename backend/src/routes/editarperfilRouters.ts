@@ -1,13 +1,16 @@
 import express from "express";
-import { db, supabase } from "../lib/supabaseClient";
-import { usuarioController } from "../controllers/usuarioController";
+import { supabase } from "../lib/supabaseClient";
+import { usuarioController } from "../controllers/editarperfilController";
 
 const router = express.Router();
+
+// Inicializa o controller passando o supabase
 const controller = usuarioController(supabase);
-// rota GET /api/usuarios/me
+
+// Rota GET /api/usuarios/me
 router.get("/me", controller.buscarPerfil);
 
-// rota PUT /api/usuarios/me
+// Rota PUT /api/usuarios/me
 router.put("/me", controller.atualizarPerfil);
 
 export default router;

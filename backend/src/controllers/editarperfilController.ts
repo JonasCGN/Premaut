@@ -1,28 +1,31 @@
 import { Request, Response } from "express";
+import { SupabaseClient } from "@supabase/supabase-js";
 
-interface DBClient {
-  query(sql: string, values?: any[]): Promise<any>;
-}
-
-export const usuarioController = (db: DBClient) => {
+export const usuarioController = (supabase: SupabaseClient) => {
   return {
     async buscarPerfil(req: Request, res: Response) {
       try {
-        // Pega o e-mail do token (ou simula por enquanto)
-        const email = req.query.email || "teste@exemplo.com";
+        // pega e-mail da query ou usa um teste temporário
+        const email = (req.query.email as string) || "teste@exemplo.com";
 
-        const [rows]: any = await db.query(
-          "SELECT nome, genero, telefone, email, nascimento FROM usuarios WHERE email = ?",
-          [email]
-        );
+        const { data, error } = await supabase
+          .from("usuarios")
+          .select("nome, genero, telefone, email, nascimento")
+          .eq("email", email)
+          .maybeSingle();
 
-        if (!rows.length) {
+        if (error) {
+          console.error("Erro ao buscar perfil:", error);
+          return res.status(500).json({ message: "Erro interno do servidor." });
+        }
+
+        if (!data) {
           return res.status(404).json({ message: "Usuário não encontrado." });
         }
 
-        return res.status(200).json(rows[0]);
+        return res.status(200).json(data);
       } catch (error) {
-        console.error("Erro ao buscar perfil:", error);
+        console.error("Erro inesperado ao buscar perfil:", error);
         return res.status(500).json({ message: "Erro interno do servidor." });
       }
     },
@@ -35,24 +38,33 @@ export const usuarioController = (db: DBClient) => {
           return res.status(400).json({ message: "O campo 'email' é obrigatório." });
         }
 
-        const [result]: any = await db.query(
-          `UPDATE usuarios
-           SET nome = ?, genero = ?, telefone = ?, nascimento = ?
-           WHERE email = ?`,
-          [nome, genero, telefone, nascimento, email]
-        );
+        const { data, error } = await supabase
+          .from("usuarios")
+          .update({
+            nome,
+            genero,
+            telefone,
+            nascimento,
+          })
+          .eq("email", email)
+          .select()
+          .maybeSingle();
 
-        const affected = result?.affectedRows ?? 0;
-        if (affected === 0) {
+        if (error) {
+          console.error("Erro ao atualizar perfil:", error);
+          return res.status(500).json({ message: "Erro interno do servidor." });
+        }
+
+        if (!data) {
           return res.status(404).json({ message: "Usuário não encontrado." });
         }
 
         return res.status(200).json({
           message: "Perfil atualizado com sucesso.",
-          data: { nome, genero, telefone, email, nascimento },
+          data,
         });
       } catch (error) {
-        console.error("Erro ao atualizar perfil:", error);
+        console.error("Erro inesperado ao atualizar perfil:", error);
         return res.status(500).json({ message: "Erro interno do servidor." });
       }
     },
