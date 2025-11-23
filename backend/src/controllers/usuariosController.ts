@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../services/supabaseClient";
 import nodemailer from "nodemailer";
+import * as jwt from "jsonwebtoken";
 
 
 export async function cadastrarUsuario(req: Request, res: Response) {
@@ -68,23 +69,21 @@ export async function loginUsuario(req: Request, res: Response) {
       .eq("email", email)
       .maybeSingle();
 
-    if (error) {
-      console.error("Erro ao buscar usuário:", error);
-      return res.status(500).json({ error: "Erro ao buscar usuário." });
-    }
-
-    if (!usuario) {
-      return res.status(400).json({ error: "Usuário não encontrado." });
-    }
+    if (error) return res.status(500).json({ error: "Erro ao buscar usuário." });
+    if (!usuario) return res.status(400).json({ error: "Usuário não encontrado." });
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    if (!senhaValida) return res.status(401).json({ error: "Senha incorreta." });
 
-    if (!senhaValida) {
-      return res.status(401).json({ error: "Senha incorreta." });
-    }
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email, tipo_usuario: usuario.tipo_usuario },
+      process.env.JWT_SECRET as string,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
+    );
 
     return res.status(200).json({
       message: "Login realizado com sucesso!",
+      token,
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
@@ -93,7 +92,6 @@ export async function loginUsuario(req: Request, res: Response) {
       },
     });
   } catch (error) {
-    console.error("Erro ao fazer login:", error);
     return res.status(500).json({ error: "Erro interno no servidor." });
   }
 }
