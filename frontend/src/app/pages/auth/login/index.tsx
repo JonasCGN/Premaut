@@ -43,7 +43,7 @@ const Login: React.FC = () => {
     <div className="container">
       {/* Conteúdo principal centralizado sobre o fundo */}
       <div className="content">
-        <div className="logo-icon">
+        <div className="logo-icon" onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
           <img src="/assets/images/logo_completa.png" alt="Logo PREMAUT" className="logo-img" />
         </div>
         <div className="login-card">

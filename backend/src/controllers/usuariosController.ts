@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { supabase } from "../services/supabaseClient";
 import nodemailer from "nodemailer";
 
+
 export async function cadastrarUsuario(req: Request, res: Response) {
   try {
     const { nome, genero, email, telefone, senha, nascimento } = req.body;
@@ -97,90 +98,75 @@ export async function loginUsuario(req: Request, res: Response) {
   }
 }
 
-
-export async function enviarCodigoRecuperacao(req: Request, res: Response) {
+export const enviarCodigoRecuperacao = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: "O e-mail é obrigatório." });
-    }
+    if (!email) return res.status(400).json({ error: "E-mail obrigatório." });
 
-  
-    const { data: usuario, error: buscaErr } = await supabase
+
+    const { data: usuario, error: userErr } = await supabase
       .from("Usuarios")
-      .select("*")
+      .select("id, nome")
       .eq("email", email)
       .maybeSingle();
 
-    if (buscaErr) {
-      console.error("Erro ao buscar usuário:", buscaErr);
+    if (userErr) {
+      console.error("[enviarCodigo] erro ao buscar usuario:", userErr);
       return res.status(500).json({ error: "Erro ao buscar usuário." });
     }
-
     if (!usuario) {
-      return res.status(400).json({ error: "Usuário não encontrado." });
+      return res.status(404).json({ error: "Usuário não encontrado." });
     }
 
 
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
 
-    try {
-      await supabase
-        .from("RecuperacaoSenha")
-        .insert([{ usuario_id: usuario.id, codigo, criado_em: new Date().toISOString() }]);
-    } catch (dbErr) {
-      console.warn("Aviso: não foi possível salvar o código em 'RecuperacaoSenha' (pode não existir).", dbErr);
 
+    const { error: insertErr } = await supabase
+      .from("RecuperacaoSenha")
+      .insert([{ usuario_id: usuario.id, codigo, criado_em: new Date().toISOString() }]);
+
+    if (insertErr) {
+      console.error("[enviarCodigo] erro ao salvar codigo:", insertErr);
+      return res.status(500).json({ error: "Erro ao salvar código." });
     }
 
-    const testAccount = await nodemailer.createTestAccount();
 
     const transporter = nodemailer.createTransport({
-      host: testAccount.smtp.host,
-      port: testAccount.smtp.port,
-      secure: testAccount.smtp.secure,
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: true, // true para porta 465
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
     const mailOptions = {
-      from: `"PREMAUT (Teste)" <no-reply@premaut.test>`,
+      from: `"Premaut" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: "Código de recuperação de senha (teste)",
-      text: `Olá ${usuario.nome || ""},\n\nSeu código de recuperação é: ${codigo}\n\nSe não foi você, ignore.`,
-      html: `<p>Olá ${usuario.nome || ""},</p><p>Seu código de recuperação é: <b>${codigo}</b></p><p>Se não foi você, ignore.</p>`,
+      subject: "Código de recuperação de senha",
+      text: `Olá ${usuario.nome || ""}, seu código de recuperação é: ${codigo}`,
+      html: `<p>Olá ${usuario.nome || ""},</p><p>Seu código de recuperação é: <b>${codigo}</b></p>`,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    
+    await transporter.sendMail(mailOptions);
 
-
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-
-    console.log("Ethereal preview URL:", previewUrl);
-
-    return res.status(200).json({
-      message: "Código (teste) enviado. Abra previewUrl para visualizar o e-mail.",
-      previewUrl,
-    });
-  } catch (error: any) {
-    console.error("Erro ao enviar código de recuperação:", error);
-    return res.status(500).json({ error: "Erro interno no servidor.", detalhes: error.message });
+    return res.status(200).json({ message: "Código enviado com sucesso!" });
+  } catch (err: any) {
+    console.error("[enviarCodigo] erro inesperado:", err);
+    return res.status(500).json({ error: "Erro interno no servidor.", detalhes: err.message });
   }
-}
+};
 
-export async function verificarCodigo(req: Request, res: Response) {
+export const verificarCodigo = async (req: Request, res: Response) => {
   try {
     const { email, codigo } = req.body;
 
     if (!email || !codigo) {
       return res.status(400).json({ error: "E-mail e código são obrigatórios." });
     }
-
-    console.log(`[verificarCodigo] solicitacao para email=${email} codigo=${codigo}`);
 
 
     const { data: usuario, error: userErr } = await supabase
@@ -193,13 +179,11 @@ export async function verificarCodigo(req: Request, res: Response) {
       console.error("[verificarCodigo] erro ao buscar usuario:", userErr);
       return res.status(500).json({ error: "Erro ao buscar usuário." });
     }
-    if (!usuario) {
-      return res.status(404).json({ error: "Usuário não encontrado." });
-    }
+    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado." });
 
     const { data: codigoData, error: codeErr } = await supabase
       .from("RecuperacaoSenha")
-      .select("id, codigo, criado_em")
+      .select("id, codigo, criado_em, usuario_id")
       .eq("usuario_id", usuario.id)
       .order("criado_em", { ascending: false })
       .limit(1)
@@ -210,36 +194,26 @@ export async function verificarCodigo(req: Request, res: Response) {
       return res.status(500).json({ error: "Erro ao buscar código." });
     }
 
-    if (!codigoData) {
+    if (!codigoData || !codigoData.usuario_id) {
       console.warn("[verificarCodigo] nenhum codigo encontrado para usuario_id=", usuario.id);
-      return res.status(400).json({ error: "Código inválido." });
+      return res.status(400).json({ error: "Código inválido ou não solicitado." });
     }
+
 
     const codigoSalvo = String(codigoData.codigo).trim();
     const codigoRecebido = String(codigo).trim();
-
-
     const criadoEm = new Date(codigoData.criado_em);
-    const expirado = (Date.now() - criadoEm.getTime()) > 15 * 60 * 1000; // 15 min
+    const expirado = Date.now() - criadoEm.getTime() > 15 * 60 * 1000; // 15 min
 
-    if (codigoSalvo !== codigoRecebido) {
-      console.warn("[verificarCodigo] codigo incorreto", { codigoSalvo, codigoRecebido });
-      return res.status(400).json({ error: "Código inválido." });
-    }
-
-    if (expirado) {
-      console.warn("[verificarCodigo] codigo expirado", { criadoEm });
-      return res.status(400).json({ error: "Código expirado. Solicite novamente." });
-    }
-
+    if (expirado) return res.status(400).json({ error: "Código expirado. Solicite novamente." });
+    if (codigoSalvo !== codigoRecebido) return res.status(400).json({ error: "Código inválido." });
 
     return res.status(200).json({ message: "Código válido." });
   } catch (err: any) {
     console.error("[verificarCodigo] erro inesperado:", err);
     return res.status(500).json({ error: "Erro interno no servidor.", detalhes: err.message });
   }
-}
-
+};
 
 export async function redefinirSenha(req: Request, res: Response) {
   try {

@@ -42,7 +42,8 @@ export const TopBar: React.FC = () => {
         }
       }
       >
-        <span
+        <a
+          href="/auth/login"
           className={styles.topbarLink}
           style={
             {
@@ -50,7 +51,7 @@ export const TopBar: React.FC = () => {
               fontWeight: '600'
             }
           }
-        >Entrar</span>
+        >Entrar</a>
       </button>
 
     </header>
