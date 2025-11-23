@@ -31,7 +31,7 @@ export const TopBar: React.FC = () => {
           <a href="" className={styles.topbarLink}>Inicio</a>
           <a href="#noticias" className={styles.topbarLink}>Noticias</a>
           <a href="#sobre" className={styles.topbarLink}>Sobre</a>
-          <a href="/pages/screen-admin" className={styles.topbarLink}>Painel</a>
+            <a href="/painel" className={styles.topbarLink}>Painel</a>
         </nav>
       </div>
       <button 
