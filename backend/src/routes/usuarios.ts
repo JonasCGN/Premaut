@@ -30,6 +30,7 @@ router.post("/login", loginUsuario);
  */
 router.post("/esqueci-senha", enviarCodigoRecuperacao);
 
+
 /**
  * @route POST /api/usuarios/redefinir-senha
  * @desc Redefinir senha do usuário com código recebido
