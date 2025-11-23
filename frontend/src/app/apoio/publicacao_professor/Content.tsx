@@ -1,12 +1,11 @@
 "use client";
 
-import Colors from '@/app/components/color';
-import React from 'react';
-
-import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
-import { Material } from '@/types/material';
+import Image from '@/app/components/assets/images';
+import Colors from '@/app/components/color';
 import { buscarMateriais } from '@/app/services/materiaisService';
+import { Material } from '@/types/material';
+import React from 'react';
 
 export const MateriaisApoio: React.FC = () => {
     const [search, setSearch] = React.useState('');
@@ -27,7 +26,6 @@ export const MateriaisApoio: React.FC = () => {
             });
     }, []);
 
-
     const filteredLivros = materiais.filter(
         livro =>
             livro.nome.toLowerCase().includes(search.toLowerCase())
@@ -45,12 +43,12 @@ export const MateriaisApoio: React.FC = () => {
         return 6;
     };
 
-    // Use a stable initial value to avoid SSR/CSR hydration mismatch
-    const [gridColumns, setGridColumns] = React.useState(6);
+    const [gridColumns, setGridColumns] = React.useState(getGridColumns());
+
+    const [dialogOpen, setDialogOpen] = React.useState(false);
+    const [selectedLivro, setSelectedLivro] = React.useState<null | Material>(null);
 
     React.useEffect(() => {
-        // Update to actual size after mount
-        setGridColumns(getGridColumns());
         const handleResize = () => setGridColumns(getGridColumns());
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
@@ -85,8 +83,10 @@ export const MateriaisApoio: React.FC = () => {
                         boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
                         overflow: 'hidden',
                         background: 'white',
+                        cursor: 'pointer'
                     }}
-                >
+                    onClick={() => { setSelectedLivro(item); setDialogOpen(true); }}
+                >   
                     <div
                         style={{
                             flex: 1,
@@ -96,6 +96,7 @@ export const MateriaisApoio: React.FC = () => {
                             justifyContent: 'center',
                             backgroundColor: Colors.verdeBase,
                             overflow: 'hidden',
+                            cursor: 'pointer'
                         }}
                     >
                         <img
@@ -136,7 +137,6 @@ export const MateriaisApoio: React.FC = () => {
                                 </div>
                             </div>
                         )}
-
                     </div>
 
                     <div
@@ -147,6 +147,7 @@ export const MateriaisApoio: React.FC = () => {
                             padding: '12px',
                             backgroundColor: Colors.verdeBase,
                             borderBottomLeftRadius: '16px',
+                            cursor: 'pointer'
                         }}
                     >
                         <span
@@ -203,6 +204,48 @@ export const MateriaisApoio: React.FC = () => {
                 </div>
             </div>
             {listItems}
+
+            {dialogOpen && selectedLivro && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setDialogOpen(false)} />
+                    <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', minWidth: '260px', zIndex: 60 }}>
+                        <div style={{ marginBottom: '8px', fontWeight: '700' }}>{selectedLivro.nome}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <button
+                                onClick={() => { setDialogOpen(false); console.log('Editar', selectedLivro); }}
+                                onMouseEnter={() => { /* noop */ }}
+                                style={{
+                                    background: '#fff',
+                                    color: '#000',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    border: '1px solid transparent'
+                                }}
+                                onMouseOver={(e) => (e.currentTarget.style.background = '#ffecec')}
+                                onMouseOut={(e) => (e.currentTarget.style.background = '#fff')}
+                            >
+                                Editar
+                            </button>
+                            <button
+                                onClick={() => { setDialogOpen(false); console.log('Excluir', selectedLivro); }}
+                                style={{
+                                    background: '#fff',
+                                    color: '#000',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    border: '1px solid transparent'
+                                }}
+                                onMouseOver={(e) => (e.currentTarget.style.background = '#ffecec')}
+                                onMouseOut={(e) => (e.currentTarget.style.background = '#fff')}
+                            >
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
