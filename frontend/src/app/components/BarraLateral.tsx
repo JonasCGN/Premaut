@@ -65,7 +65,7 @@ export default function BarraLateral({ lado = "esquerdo", onClose }: BarraLatera
         <a href="#" onClick={handlePerfilClick} className="flex items-center gap-3 text-[#2696ad] text-lg font-semibold mb-2 hover:underline" style={{ fontFamily: 'Inria Serif, serif' }}>
           <FaUser size={24} /> Perfis
         </a>
-        <a href="/apoio/materiais" onClick={handleMaterialClick} className="flex items-center gap-3 text-black text-lg font-bold mb-2" style={{ fontFamily: 'Inria Serif, serif' }}>
+        <a href="/apoio/materiais" className="flex items-center gap-3 text-black text-lg font-bold mb-2 hover:underline" style={{ fontFamily: 'Inria Serif, serif' }}>
           <FaBoxOpen size={24} /> Matérias de apoio
         </a>
         {/* <a href="#" onClick={handleConfigClick} className="flex items-center gap-3 text-black text-lg font-bold" style={{ fontFamily: 'Inria Serif, serif' }}>
