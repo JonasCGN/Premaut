@@ -3,6 +3,64 @@ import bcrypt from "bcryptjs";
 import { supabase } from "../services/supabaseClient";
 import nodemailer from "nodemailer";
 
+// Função para listar usuários por tipo (para o painel admin)
+export async function listarUsuarios(req: Request, res: Response) {
+  try {
+    const { tipo } = req.query;
+
+    if (!tipo) {
+      return res.status(400).json({ error: "Tipo de usuário é obrigatório." });
+    }
+
+    const { data: usuarios, error } = await supabase
+      .from("Usuarios")
+      .select("id, nome, email, tipo_usuario")
+      .eq("tipo_usuario", tipo.toString().toLowerCase());
+
+    if (error) {
+      console.error("Erro ao buscar usuários:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários." });
+    }
+
+    return res.status(200).json(usuarios || []);
+  } catch (error) {
+    console.error("Erro ao listar usuários:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
+
+// Função para buscar usuários por nome (para a pesquisa)
+export async function buscarUsuarios(req: Request, res: Response) {
+  try {
+    const { nome, tipo } = req.query;
+
+    let query = supabase
+      .from("Usuarios")
+      .select("id, nome, email, tipo_usuario");
+
+    if (nome) {
+      query = query.ilike("nome", `%${nome}%`);
+    }
+
+    if (tipo) {
+      query = query.eq("tipo_usuario", tipo.toString().toLowerCase());
+    }
+
+    const { data: usuarios, error } = await query;
+
+    if (error) {
+      console.error("Erro ao buscar usuários:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários." });
+    }
+
+    return res.status(200).json(usuarios || []);
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
+
+
 export async function cadastrarUsuario(req: Request, res: Response) {
   try {
     const { nome, genero, email, telefone, senha, nascimento } = req.body;
@@ -26,10 +84,10 @@ export async function cadastrarUsuario(req: Request, res: Response) {
       return res.status(400).json({ error: "E-mail já cadastrado." });
     }
 
-
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-    const { data, error } = await supabase.from("Usuarios").insert([
+    // Cria o usuário na tabela personalizada
+    const { data: userData, error: insertError } = await supabase.from("Usuarios").insert([
       {
         nome,
         genero,
@@ -39,14 +97,22 @@ export async function cadastrarUsuario(req: Request, res: Response) {
         nascimento,
         tipo_usuario: "comum",
       },
-    ]);
+    ]).select().single();
 
-    if (error) {
-      console.error("Erro no insert do Supabase:", error);
-      return res.status(400).json({ error: error.message });
+    if (insertError) {
+      console.error("Erro no insert do Supabase:", insertError);
+      return res.status(400).json({ error: insertError.message });
     }
 
-    return res.status(201).json({ message: "Usuário cadastrado com sucesso!", data });
+    return res.status(201).json({
+      message: "Usuário cadastrado com sucesso!",
+      usuario: {
+        id: userData.id, // UUID da tabela Usuarios
+        nome: userData.nome,
+        email: userData.email,
+        tipo_usuario: userData.tipo_usuario,
+      },
+    });
   } catch (error) {
     console.error("Erro ao cadastrar usuário:", error);
     return res.status(500).json({ error: "Erro interno no servidor." });
@@ -61,14 +127,15 @@ export async function loginUsuario(req: Request, res: Response) {
       return res.status(400).json({ error: "E-mail e senha são obrigatórios." });
     }
 
-    const { data: usuario, error } = await supabase
+    // Primeiro, busca o usuário no banco para verificar se existe
+    const { data: usuario, error: buscarError } = await supabase
       .from("Usuarios")
       .select("*")
       .eq("email", email)
       .maybeSingle();
 
-    if (error) {
-      console.error("Erro ao buscar usuário:", error);
+    if (buscarError) {
+      console.error("Erro ao buscar usuário:", buscarError);
       return res.status(500).json({ error: "Erro ao buscar usuário." });
     }
 
@@ -76,16 +143,18 @@ export async function loginUsuario(req: Request, res: Response) {
       return res.status(400).json({ error: "Usuário não encontrado." });
     }
 
+    // Verifica a senha
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaValida) {
       return res.status(401).json({ error: "Senha incorreta." });
     }
 
+    // Login realizado com sucesso - retorna apenas dados da tabela
     return res.status(200).json({
       message: "Login realizado com sucesso!",
       usuario: {
-        id: usuario.id,
+        id: usuario.id, // UUID da tabela Usuarios
         nome: usuario.nome,
         email: usuario.email,
         tipo_usuario: usuario.tipo_usuario,
@@ -97,90 +166,73 @@ export async function loginUsuario(req: Request, res: Response) {
   }
 }
 
-
-export async function enviarCodigoRecuperacao(req: Request, res: Response) {
+export const enviarCodigoRecuperacao = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: "O e-mail é obrigatório." });
-    }
+    if (!email) return res.status(400).json({ error: "E-mail obrigatório." });
 
-  
-    const { data: usuario, error: buscaErr } = await supabase
+
+    const { data: usuario, error: userErr } = await supabase
       .from("Usuarios")
-      .select("*")
+      .select("id, nome")
       .eq("email", email)
       .maybeSingle();
 
-    if (buscaErr) {
-      console.error("Erro ao buscar usuário:", buscaErr);
+    if (userErr) {
+      console.error("[enviarCodigo] erro ao buscar usuario:", userErr);
       return res.status(500).json({ error: "Erro ao buscar usuário." });
     }
-
     if (!usuario) {
-      return res.status(400).json({ error: "Usuário não encontrado." });
+      return res.status(404).json({ error: "Usuário não encontrado." });
     }
-
 
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
 
-    try {
-      await supabase
-        .from("RecuperacaoSenha")
-        .insert([{ usuario_id: usuario.id, codigo, criado_em: new Date().toISOString() }]);
-    } catch (dbErr) {
-      console.warn("Aviso: não foi possível salvar o código em 'RecuperacaoSenha' (pode não existir).", dbErr);
+    const { error: insertErr } = await supabase
+      .from("RecuperacaoSenha")
+      .insert([{ usuario_id: usuario.id, codigo, criado_em: new Date().toISOString() }]);
 
+    if (insertErr) {
+      console.error("[enviarCodigo] erro ao salvar codigo:", insertErr);
+      return res.status(500).json({ error: "Erro ao salvar código." });
     }
 
-    const testAccount = await nodemailer.createTestAccount();
 
     const transporter = nodemailer.createTransport({
-      host: testAccount.smtp.host,
-      port: testAccount.smtp.port,
-      secure: testAccount.smtp.secure,
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: true, // true para porta 465
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
     const mailOptions = {
-      from: `"PREMAUT (Teste)" <no-reply@premaut.test>`,
+      from: `"Premaut" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: "Código de recuperação de senha (teste)",
-      text: `Olá ${usuario.nome || ""},\n\nSeu código de recuperação é: ${codigo}\n\nSe não foi você, ignore.`,
-      html: `<p>Olá ${usuario.nome || ""},</p><p>Seu código de recuperação é: <b>${codigo}</b></p><p>Se não foi você, ignore.</p>`,
+      subject: "Código de recuperação de senha",
+      text: `Olá ${usuario.nome || ""}, seu código de recuperação é: ${codigo}`,
+      html: `<p>Olá ${usuario.nome || ""},</p><p>Seu código de recuperação é: <b>${codigo}</b></p>`,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    
+    await transporter.sendMail(mailOptions);
 
+    return res.status(200).json({ message: "Código enviado com sucesso!" });
+  } catch (err: any) {
+    console.error("[enviarCodigo] erro inesperado:", err);
+    return res.status(500).json({ error: "Erro interno no servidor.", detalhes: err.message });
+  }                                      
+};
 
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-
-    console.log("Ethereal preview URL:", previewUrl);
-
-    return res.status(200).json({
-      message: "Código (teste) enviado. Abra previewUrl para visualizar o e-mail.",
-      previewUrl,
-    });
-  } catch (error: any) {
-    console.error("Erro ao enviar código de recuperação:", error);
-    return res.status(500).json({ error: "Erro interno no servidor.", detalhes: error.message });
-  }
-}
-
-export async function verificarCodigo(req: Request, res: Response) {
+export const verificarCodigo = async (req: Request, res: Response) => {
   try {
     const { email, codigo } = req.body;
 
     if (!email || !codigo) {
       return res.status(400).json({ error: "E-mail e código são obrigatórios." });
     }
-
-    console.log(`[verificarCodigo] solicitacao para email=${email} codigo=${codigo}`);
 
 
     const { data: usuario, error: userErr } = await supabase
@@ -193,13 +245,11 @@ export async function verificarCodigo(req: Request, res: Response) {
       console.error("[verificarCodigo] erro ao buscar usuario:", userErr);
       return res.status(500).json({ error: "Erro ao buscar usuário." });
     }
-    if (!usuario) {
-      return res.status(404).json({ error: "Usuário não encontrado." });
-    }
+    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado." });
 
     const { data: codigoData, error: codeErr } = await supabase
       .from("RecuperacaoSenha")
-      .select("id, codigo, criado_em")
+      .select("id, codigo, criado_em, usuario_id")
       .eq("usuario_id", usuario.id)
       .order("criado_em", { ascending: false })
       .limit(1)
@@ -210,36 +260,65 @@ export async function verificarCodigo(req: Request, res: Response) {
       return res.status(500).json({ error: "Erro ao buscar código." });
     }
 
-    if (!codigoData) {
+    if (!codigoData || !codigoData.usuario_id) {
       console.warn("[verificarCodigo] nenhum codigo encontrado para usuario_id=", usuario.id);
-      return res.status(400).json({ error: "Código inválido." });
+      return res.status(400).json({ error: "Código inválido ou não solicitado." });
     }
+
 
     const codigoSalvo = String(codigoData.codigo).trim();
     const codigoRecebido = String(codigo).trim();
-
-
     const criadoEm = new Date(codigoData.criado_em);
-    const expirado = (Date.now() - criadoEm.getTime()) > 15 * 60 * 1000; // 15 min
+    const expirado = Date.now() - criadoEm.getTime() > 15 * 60 * 1000; // 15 min
 
-    if (codigoSalvo !== codigoRecebido) {
-      console.warn("[verificarCodigo] codigo incorreto", { codigoSalvo, codigoRecebido });
-      return res.status(400).json({ error: "Código inválido." });
-    }
-
-    if (expirado) {
-      console.warn("[verificarCodigo] codigo expirado", { criadoEm });
-      return res.status(400).json({ error: "Código expirado. Solicite novamente." });
-    }
-
+    if (expirado) return res.status(400).json({ error: "Código expirado. Solicite novamente." });
+    if (codigoSalvo !== codigoRecebido) return res.status(400).json({ error: "Código inválido." });
 
     return res.status(200).json({ message: "Código válido." });
   } catch (err: any) {
     console.error("[verificarCodigo] erro inesperado:", err);
     return res.status(500).json({ error: "Erro interno no servidor.", detalhes: err.message });
   }
-}
+};
 
+export async function validarUsuario(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      return res.status(401).json({ error: "ID do usuário não fornecido." });
+    }
+
+    // Busca o usuário pelo ID
+    const { data: usuario, error } = await supabase
+      .from("Usuarios")
+      .select("id, nome, email, tipo_usuario")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao validar usuário:", error);
+      return res.status(500).json({ error: "Erro ao validar usuário." });
+    }
+
+    if (!usuario) {
+      return res.status(401).json({ error: "Usuário não encontrado." });
+    }
+
+    return res.status(200).json({
+      valid: true,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        tipo_usuario: usuario.tipo_usuario,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao validar usuário:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
 
 export async function redefinirSenha(req: Request, res: Response) {
   try {

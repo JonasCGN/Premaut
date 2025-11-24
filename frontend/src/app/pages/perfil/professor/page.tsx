@@ -1,11 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import TopBar from "@/app/components/TopBar";
+import { useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
+import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
 import { FiTrash2 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
+import {
+    buscarProfessorPorId,
+    buscarMonitoresProfessor,
+    buscarMateriaisProfessor,
+    buscarEventosProfessor,
+    buscarMonitoresDisponiveis,
+    vincularMonitor,
+    removerEvento
+} from '../../../services/professorService';
 
 interface ProfessorPerfil {
     id: string;
@@ -70,78 +81,88 @@ export default function ScreenProfessor() {
 
     const router = useRouter();
 
+    const searchParams = useSearchParams();
+    const auth = useAuth();
+
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
+        const run = async () => {
+            setLoading(true);
 
-        if (storedUser) {
-            const user = JSON.parse(storedUser);
+            const queryId = searchParams?.get('id');
+            const targetId = queryId || auth?.user?.id || null;
 
-            // 1. Busca Perfil
-            fetch(`/api/professor/${user.id}`)
-                .then(res => res.json())
-                .then(data => {
-                    setUsuario(data.perfil);
-                    setLoading(false);
-                })
-                .catch(err => {
-                    console.error("Erro ao buscar usuário:", err);
-                    setLoading(false);
-                });
+            if (!targetId) {
+                setLoading(false);
+                // Se for admin e não passou ?id, redireciona para painel (admin deve acessar perfil via ?id)
+                if (auth?.user?.tipo_usuario === 'admin') {
+                    router.push('/painel');
+                    return;
+                }
+                setUsuario(null);
+                return;
+            }
 
-            // 2. Busca Monitores Vinculados
-            fetchLinkedMonitors(user.id);
+            try {
+                const data = await buscarProfessorPorId(targetId);
+                setUsuario(data.perfil);
+                // carregar dependentes
+                fetchLinkedMonitors(targetId);
+                fetchMateriais(targetId);
+                fetchEventos(targetId);
+            } catch (err) {
+                console.error('Erro ao buscar usuário:', err);
+                setUsuario(null);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-            // 3. Busca Materiais
-            fetchMateriais(user.id);
+        run();
+        // Reexecuta quando muda o id query ou usuário autenticado
+    }, [searchParams?.get('id'), auth?.user?.id]);
 
-            // 4. Busca Eventos
-            fetchEventos(user.id);
-        } else {
-            setLoading(false);
+    const fetchLinkedMonitors = async (professorId: string) => {
+        try {
+            const data = await buscarMonitoresProfessor(professorId);
+            setMonitores(data.monitores || []);
+        } catch (err) {
+            console.error("Erro ao buscar monitores:", err);
         }
-    }, []);
-
-    const fetchLinkedMonitors = (professorId: string) => {
-        fetch(`/api/professor-monitores/${professorId}`)
-            .then(res => res.json())
-            .then(data => setMonitores(data.monitores || []))
-            .catch(err => console.error("Erro ao buscar monitores:", err));
     };
 
-    const fetchMateriais = (professorId: string) => {
-        fetch(`/api/materiais?professorId=${professorId}`)
-            .then(res => res.json())
-            .then(data => setMateriais(data || []))
-            .catch(err => console.error("Erro ao buscar materiais:", err));
+    const fetchMateriais = async (professorId: string) => {
+        try {
+            const data = await buscarMateriaisProfessor(professorId);
+            setMateriais(data || []);
+        } catch (err) {
+            console.error("Erro ao buscar materiais:", err);
+        }
     };
 
-    const fetchEventos = (professorId: string) => {
-        fetch(`/api/eventos?criador=${professorId}`)
-            .then(res => res.json())
-            .then(data => setEventos(data || []))
-            .catch(err => console.error("Erro ao buscar eventos:", err));
+    const fetchEventos = async (professorId: string) => {
+        try {
+            const data = await buscarEventosProfessor(professorId);
+            setEventos(data || []);
+        } catch (err) {
+            console.error("Erro ao buscar eventos:", err);
+        }
     };
 
-    const handleAddMonitorClick = () => {
+    const handleAddMonitorClick = async () => {
         if (!usuario) return;
-        fetch(`/api/professor-monitores/disponiveis/${usuario.id}`)
-            .then(res => res.json())
-            .then(data => {
-                setAvailableMonitors(data.monitores || []);
-                setShowLinkModal(true);
-            })
-            .catch(err => alert("Erro ao buscar monitores disponíveis."));
+        try {
+            const data = await buscarMonitoresDisponiveis(usuario.id);
+            setAvailableMonitors(data.monitores || []);
+            setShowLinkModal(true);
+        } catch (err) {
+            alert("Erro ao buscar monitores disponíveis.");
+        }
     };
 
     const handleLinkMonitor = async () => {
         if (!selectedMonitor || !usuario) return;
         try {
-            const res = await fetch("/api/professor-monitores/vincular", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ professorId: usuario.id, monitorId: selectedMonitor })
-            });
-            if (!res.ok) throw new Error("Erro ao vincular monitor");
+            await vincularMonitor({ professorId: usuario.id, monitorId: selectedMonitor });
             alert("Monitor vinculado com sucesso!");
             setShowLinkModal(false);
             setSelectedMonitor("");
@@ -154,12 +175,11 @@ export default function ScreenProfessor() {
     const handleDeleteEvento = async (eventoId: number) => {
         if (!confirm("Tem certeza que deseja excluir este evento?")) return;
         try {
-            const res = await fetch(`/api/eventos/${eventoId}`, { method: "DELETE" });
-            if (!res.ok) throw new Error("Erro ao excluir evento");
+            await removerEvento(eventoId.toString());
             if (usuario) fetchEventos(usuario.id);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao excluir evento:", error);
-            alert("Erro ao excluir evento.");
+            alert(error?.message || 'Erro ao excluir evento.');
         }
     };
 
@@ -174,13 +194,32 @@ export default function ScreenProfessor() {
     if (loading) return <div className="flex justify-center items-center h-screen">Carregando...</div>;
     if (!usuario) return <div className="flex justify-center items-center h-screen">Usuário não encontrado.</div>;
 
-    const dataNascimento = usuario.nascimento
-        ? new Date(usuario.nascimento).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
-        : "Não informado";
+    const formatDateSafe = (value: any, fallback = 'Data desconhecida') => {
+        if (!value) return fallback;
+        try {
+            // tentativa direta
+            const d = new Date(value);
+            if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    const dataCadastro = usuario.criado_em
-        ? new Date(usuario.criado_em).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
-        : "Data desconhecida";
+            // se for número em segundos, converte para ms
+            const n = Number(value);
+            if (!isNaN(n)) {
+                const ms = n < 1e12 ? n * 1000 : n; // heurística: se for menor que 1e12 provavelmente está em segundos
+                const d2 = new Date(ms);
+                if (!isNaN(d2.getTime())) return d2.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+
+            // última tentativa: substituir espaço por T (caso venha sem separador de timezone)
+            const isoTry = new Date(String(value).replace(' ', 'T'));
+            if (!isNaN(isoTry.getTime())) return isoTry.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (e) {
+            console.warn('formatDateSafe error', e, value);
+        }
+        return fallback;
+    };
+
+    const dataNascimento = usuario.nascimento ? formatDateSafe(usuario.nascimento, 'Não informado') : 'Não informado';
+    const dataCadastro = usuario.criado_em ? formatDateSafe(usuario.criado_em, 'Data desconhecida') : 'Data desconhecida';
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -200,7 +239,7 @@ export default function ScreenProfessor() {
                             </div>
                             <span className="text-xs text-gray-500 mt-1 block">cadastrado em: {dataCadastro}</span>
                         </div>
-                        <button onClick={() => router.push('/editar/professor')} className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-[#FFCBBD] text-[#FFCBBD] rounded-full px-4 py-2 text-sm hover:bg-[#FFEBE5] transition">
+                        <button onClick={() => router.push(`/editar/professor?id=${usuario.id}`)} className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-[#FFCBBD] text-[#FFCBBD] rounded-full px-4 py-2 text-sm hover:bg-[#FFEBE5] transition">
                             <img src={Icons.lapisRosa} alt="Editar" className="w-4 h-4" />
                             Editar perfil
                         </button>
@@ -266,7 +305,7 @@ export default function ScreenProfessor() {
                     {/* Coluna 1: Materiais */}
                     <div className="flex flex-col items-start gap-4">
                         <button
-                            onClick={() => router.push(`/cadastrar/upload?professorId=${usuario.id}`)}
+                            onClick={() => router.push(`/cadastrar/material?professorId=${usuario.id}`)}
                             className="flex items-center gap-2 bg-[#FAE0D9] text-[#4A4A4A] px-5 py-3 rounded-[15.82px] font-medium shadow-md hover:bg-[#FFF1ED] transition"
                         >
                             <img src={Icons.lapisCinza} alt="Adicionar" className="w-5 h-5" />
@@ -362,12 +401,12 @@ export default function ScreenProfessor() {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => handleDeleteEvento(event.id)}
-                                                className="p-1 hover:bg-red-100 rounded transition opacity-60 hover:opacity-100"
-                                                title="Excluir evento"
-                                            >
-                                                <FiTrash2 size={16} color="#ef4444" />
-                                            </button>
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteEvento(event.id); }}
+                                                    className="p-1 hover:bg-red-100 rounded transition opacity-60 hover:opacity-100"
+                                                    title="Excluir evento"
+                                                >
+                                                    <FiTrash2 size={16} color="#ef4444" />
+                                                </button>
                                         </div>
                                     ))
                                 )}

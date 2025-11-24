@@ -45,6 +45,8 @@ export const createArquivo = async (req: Request, res: Response) => {
   try {
     const { nome, descricao, url, capa_url, professor_id } = req.body;
 
+    console.info('[createArquivo] req.body:', { nome, descricao, url, capa_url, professor_id });
+
     // 1. Cria o arquivo na tabela arquivos
     const { data: arquivo, error: arquivoError } = await supabase
       .from('arquivos')
@@ -65,19 +67,26 @@ export const createArquivo = async (req: Request, res: Response) => {
 
     // 2. Se tiver professor_id, cria o vínculo na tabela Professor_Arquivos
     if (professor_id && arquivo) {
-      const { error: linkError } = await supabase
-        .from('Professor_Arquivos')
-        .insert([
-          {
-            professor_id,
-            arquivo_id: arquivo.id,
-          },
-        ]);
+      try {
+        const { data: linkData, error: linkError } = await supabase
+          .from('Professor_Arquivos')
+          .insert([
+            {
+              professor_id,
+              arquivo_id: arquivo.id,
+            },
+          ])
+          .select();
 
-      if (linkError) {
-        console.error('Erro ao vincular arquivo ao professor:', linkError);
-        // Não vamos falhar a requisição se o vínculo falhar, mas logamos o erro
+        if (linkError) {
+          console.error('[createArquivo] Erro ao vincular arquivo ao professor:', linkError);
+        } else {
+          console.info('[createArquivo] link criado:', linkData);
+        }
+      } catch (err) {
+        console.error('[createArquivo] exceção ao criar link Professor_Arquivos:', err);
       }
+      // Não vamos falhar a requisição se o vínculo falhar, mas logamos o erro
     }
 
     res.status(201).json(arquivo);

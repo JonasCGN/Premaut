@@ -3,10 +3,13 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { login, LoginData } from "../../../services/authService";
+import { useAuth } from "../../../contexts/AuthContext";
 import './styles.css';
 
 const Login: React.FC = () => {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -18,19 +21,15 @@ const Login: React.FC = () => {
     setMensagem("");
 
     try {
-      const resposta = await fetch("http://localhost:3001/api/usuarios/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha }),
-      });
+      const data: LoginData = { email, senha };
+      const result = await login(data);
 
-      const data = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(data.error || "Erro ao fazer login.");
+      // Atualiza o context de autenticação
+      if (result.usuario) {
+        authLogin(result.usuario.id, result.usuario);
       }
 
-      setMensagem(data.message);
+      setMensagem(result.message);
       setTimeout(() => router.push("/home"), 1000);
     } catch (erro: any) {
       setMensagem(erro.message || "Erro ao fazer login.");
@@ -43,7 +42,7 @@ const Login: React.FC = () => {
     <div className="container">
       {/* Conteúdo principal centralizado sobre o fundo */}
       <div className="content">
-        <div className="logo-icon">
+        <div className="logo-icon" onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
           <img src="/assets/images/logo_completa.png" alt="Logo PREMAUT" className="logo-img" />
         </div>
         <div className="login-card">

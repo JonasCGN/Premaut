@@ -149,3 +149,20 @@ export async function saveEditData(req: Request, res: Response) {
         return res.status(500).json({ error: "Erro interno." });
     }
 }
+
+export const createRelatorio = async (req: Request, res: Response) => {
+    const { assunto, body, tipo } = req.body;
+    const pacienteId = req.body.pacienteId || req.body.paciente_id || null;
+
+    const { data, error } = await supabase
+        .from('relatorios')
+        .insert([{ assunto, body, tipo, paciente_id: pacienteId }])
+        .select();
+
+    if (error) {
+        console.error("Erro ao criar relatório:", error);
+        return res.status(500).json({ error: "Erro ao criar relatório." });
+    }
+
+    return res.status(201).json({ message: "Relatório criado com sucesso!", relatorio: data });
+};
