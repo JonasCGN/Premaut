@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
@@ -79,38 +81,45 @@ export default function ScreenProfessor() {
 
     const router = useRouter();
 
+    const searchParams = useSearchParams();
+    const auth = useAuth();
+
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
+        const run = async () => {
+            setLoading(true);
 
-        if (storedUser) {
-            const user = JSON.parse(storedUser);
+            const queryId = searchParams?.get('id');
+            const targetId = queryId || auth?.user?.id || null;
 
-            const fetchData = async () => {
-                try {
-                    // 1. Busca Perfil
-                    const data = await buscarProfessorPorId(user.id);
-                    setUsuario(data.perfil);
-                    setLoading(false);
-
-                    // 2. Busca Monitores Vinculados
-                    fetchLinkedMonitors(user.id);
-
-                    // 3. Busca Materiais
-                    fetchMateriais(user.id);
-
-                    // 4. Busca Eventos
-                    fetchEventos(user.id);
-                } catch (err) {
-                    console.error("Erro ao buscar usuário:", err);
-                    setLoading(false);
+            if (!targetId) {
+                setLoading(false);
+                // Se for admin e não passou ?id, redireciona para painel (admin deve acessar perfil via ?id)
+                if (auth?.user?.tipo_usuario === 'admin') {
+                    router.push('/painel');
+                    return;
                 }
-            };
+                setUsuario(null);
+                return;
+            }
 
-            fetchData();
-        } else {
-            setLoading(false);
-        }
-    }, []);
+            try {
+                const data = await buscarProfessorPorId(targetId);
+                setUsuario(data.perfil);
+                // carregar dependentes
+                fetchLinkedMonitors(targetId);
+                fetchMateriais(targetId);
+                fetchEventos(targetId);
+            } catch (err) {
+                console.error('Erro ao buscar usuário:', err);
+                setUsuario(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        run();
+        // Reexecuta quando muda o id query ou usuário autenticado
+    }, [searchParams?.get('id'), auth?.user?.id]);
 
     const fetchLinkedMonitors = async (professorId: string) => {
         try {
@@ -211,7 +220,7 @@ export default function ScreenProfessor() {
                             </div>
                             <span className="text-xs text-gray-500 mt-1 block">cadastrado em: {dataCadastro}</span>
                         </div>
-                        <button onClick={() => router.push('/editar/professor')} className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-[#FFCBBD] text-[#FFCBBD] rounded-full px-4 py-2 text-sm hover:bg-[#FFEBE5] transition">
+                        <button onClick={() => router.push(`/editar/professor?id=${usuario.id}`)} className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-[#FFCBBD] text-[#FFCBBD] rounded-full px-4 py-2 text-sm hover:bg-[#FFEBE5] transition">
                             <img src={Icons.lapisRosa} alt="Editar" className="w-4 h-4" />
                             Editar perfil
                         </button>
