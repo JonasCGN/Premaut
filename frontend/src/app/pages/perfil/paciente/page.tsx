@@ -62,13 +62,10 @@ export default function ScreenPaciente() {
 
   useEffect(() => {
     if (!id) {
-      // Se não tiver ID, talvez redirecionar ou mostrar erro?
-      // Por enquanto, apenas para de carregar
       setLoading(false);
       return;
     }
 
-    // Busca dados do paciente e relatórios usando os serviços
     const fetchData = async () => {
       try {
         const [pacienteData, relatoriosData] = await Promise.all([
@@ -85,9 +82,8 @@ export default function ScreenPaciente() {
         }
 
         setLoading(false);
-      })
-      .catch(err => {
-        console.error('Erro carregando paciente/relatórios:', err);
+      } catch (error) {
+        console.error('Erro carregando paciente/relatórios:', error);
         setLoading(false);
       }
     };

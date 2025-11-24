@@ -5,7 +5,7 @@ import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
 import { listarUsuarios, buscarUsuarios, Usuario } from "../../../services/adminService";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 export default function TelaAdmin() {
   const router = useRouter();

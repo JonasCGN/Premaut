@@ -38,19 +38,14 @@ export default function Cadastro() {
     setMensagem("");
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
-      const resposta = await fetch(`${API_BASE}/api/usuarios/cadastro`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome,
-          genero,
-          telefone,
-          email,
-          senha,
-          nascimento,
-        }),
-      });
+      const data: CadastroData = {
+        nome,
+        genero,
+        telefone,
+        email,
+        senha,
+        nascimento,
+      };
 
       await cadastro(data);
       setMensagem("Usuário cadastrado com sucesso!");
