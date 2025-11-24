@@ -172,6 +172,9 @@ export const MateriaisApoio: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => window.history.back()}
+                    style={{
+                        cursor: 'pointer'
+                    }}
                     aria-label="Voltar"
                 >
                     <img src={Icons.mdi_arrow_back} alt="Voltar" className="w-12 h-12" />

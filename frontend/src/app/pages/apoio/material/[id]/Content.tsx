@@ -36,6 +36,9 @@ export const MaterialDetalhe: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => window.history.back()}
+                    style={{
+                        cursor: 'pointer'
+                    }}
                     aria-label="Voltar"
                 >
                     <img src={Icons.mdi_arrow_back} alt="Voltar" className="w-12 h-12" />
@@ -89,8 +92,70 @@ export const MaterialDetalhe: React.FC = () => {
                             {material.qtd_paginas} páginas
                         </span>
                     )}
+                    {material.url && (
+                        <button
+                            onClick={() => window.open(material.url, '_blank')}
+                            style={{
+                                marginTop: '12px',
+                                padding: '8px 16px',
+                                backgroundColor: Colors.verdeBase,
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontFamily: '"Inria Serif"',
+                                fontSize: '14px',
+                                fontWeight: 600
+                            }}
+                        >
+                            Abrir PDF em nova aba
+                        </button>
+                    )}
                 </div>
             </div>
+            
+            {/* Visualizador de PDF */}
+            {material.url && (
+                <div className="mt-8 mx-8">
+                    <h3 
+                        style={{
+                            color: '#3B3B3B',
+                            fontFamily: '"Inria Serif"',
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            marginBottom: '16px'
+                        }}
+                    >
+                        Visualizar PDF
+                    </h3>
+                    <div 
+                        style={{
+                            border: '2px solid #ddd',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            backgroundColor: '#f5f5f5'
+                        }}
+                    >
+                        <iframe
+                            src={material.url}
+                            style={{
+                                width: '100%',
+                                height: '600px',
+                                border: 'none'
+                            }}
+                            title={`PDF: ${material.nome}`}
+                        />
+                    </div>
+                    <p style={{ 
+                        fontSize: '12px', 
+                        color: '#666', 
+                        marginTop: '8px',
+                        fontStyle: 'italic'
+                    }}>
+                        Se o PDF não carregar acima, clique no botão "Abrir PDF em nova aba"
+                    </p>
+                </div>
+            )}
         </div>
     );
 };
