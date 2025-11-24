@@ -1,41 +1,44 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import TopBar from "@/app/components/TopBar";
 import Image from '@/app/components/assets/images';
+import { useRouter } from 'next/navigation';
 
-interface PacienteEdit {
+interface ProfessorPerfilEdit {
     nome: string;
+    email: string;
     genero: string;
+    telefone: string;
     nascimento: string;
     nascimentoISO?: string;
-    telefone: string;
-    email: string;
-    nivel_suporte: string;
-    comodidade: string;
-    remedios: string;
-    estereotipia: string;
-    reforco_positivo: string;
-    reforco_negativo: string;
+    inicio_orientacao: string;
+    fim_orientacao: string;
+    curso: string;
+    especialidade: string;
 }
 
-export default function EditScreenPaciente() {
-    const [formData, setFormData] = useState<PacienteEdit | null>(null);
+export default function EditScreenProfessor() {
+    const [formData, setFormData] = useState<ProfessorPerfilEdit | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const id = searchParams.get('id');
 
     useEffect(() => {
-        if (!id) {
-            alert("ID do paciente não encontrado.");
-            router.back();
+        const userData = localStorage.getItem("user");
+        if (!userData) {
+            router.push("/auth/login");
+            return;
+        }
+
+        const user = JSON.parse(userData);
+        if (user.tipo_usuario !== "professor") {
+            alert("Acesso negado.");
+            router.push("/auth/login");
             return;
         }
 
         // Busca dados para edição
-        fetch(`/api/pacientes/editar/${id}`, {
+        fetch(`/api/professor/${user.id}`, {
             headers: { "Content-Type": "application/json" },
         })
             .then(res => {
@@ -43,47 +46,82 @@ export default function EditScreenPaciente() {
                 return res.json();
             })
             .then(data => {
+                // Formata a data para DD/MM/YYYY se existir
                 const perfil = data.perfil;
-                // Formata data se necessário (assumindo YYYY-MM-DD do banco)
-                // Se vier timestamp, precisaria converter.
-                // Vamos assumir que o input date aceita YYYY-MM-DD
+                if (perfil.nascimento) {
+                    // Assumindo que vem ISO YYYY-MM-DD
+                    const [year, month, day] = perfil.nascimento.split("-");
+                    perfil.nascimento = `${day}/${month}/${year}`;
+                }
                 setFormData(perfil);
                 setLoading(false);
             })
             .catch(err => {
                 console.error(err);
                 setLoading(false);
-                alert("Erro ao carregar dados do paciente.");
-                router.back();
+                router.push("/perfil/professor");
             });
-    }, [id, router]);
+    }, [router]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         if (formData) {
             setFormData({ ...formData, [e.target.name]: e.target.value });
         }
     };
 
+    // Máscara de data DD/MM/YYYY
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 8) value = value.slice(0, 8);
+
+        if (value.length > 4) {
+            value = value.replace(/^(\d{2})(\d{2})(\d+)/, "$1/$2/$3");
+        } else if (value.length > 2) {
+            value = value.replace(/^(\d{2})(\d+)/, "$1/$2");
+        }
+
+        if (formData) {
+            setFormData({ ...formData, nascimento: value });
+        }
+    };
+
     const handleSave = async () => {
-        if (!formData || !id) return;
+        if (!formData) return;
+
+        const userData = localStorage.getItem("user");
+        if (!userData) return;
+        const user = JSON.parse(userData);
+
+        // Converte DD/MM/YYYY para YYYY-MM-DD
+        let nascimentoISO = null;
+        if (formData.nascimento && formData.nascimento.length === 10) {
+            const parts = formData.nascimento.split("/");
+            if (parts.length === 3) {
+                nascimentoISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
 
         try {
-            const res = await fetch(`/api/pacientes/editar/${id}`, {
+            const res = await fetch(`/api/professor/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    nascimento: nascimentoISO,
+                }),
             });
 
             if (!res.ok) {
                 const errData = await res.json();
-                throw new Error(errData.details || errData.error || "Erro ao atualizar");
+                const errorMessage = errData.details || errData.error || "Erro ao atualizar perfil";
+                throw new Error(errorMessage);
             }
 
-            alert("Paciente atualizado com sucesso!");
-            router.push(`/perfil/paciente?id=${id}`);
+            alert("Perfil atualizado com sucesso!");
+            router.push("/perfil/professor");
         } catch (error: any) {
             console.error(error);
-            alert(`Erro ao atualizar: ${error.message}`);
+            alert(`Erro ao atualizar perfil: ${error.message}`);
         }
     };
 
@@ -111,7 +149,7 @@ export default function EditScreenPaciente() {
                         </svg>
                         <span className="text-lg font-medium">Voltar</span>
                     </button>
-                    <h1 className="text-2xl font-bold text-gray-800">Editar Paciente</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">Editar Perfil</h1>
                     <div className="w-20"></div> {/* Spacer */}
                 </div>
 
@@ -130,7 +168,7 @@ export default function EditScreenPaciente() {
                                 name="nome"
                                 value={formData.nome || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
@@ -141,7 +179,7 @@ export default function EditScreenPaciente() {
                                 name="email"
                                 value={formData.email || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
@@ -151,12 +189,13 @@ export default function EditScreenPaciente() {
                                 name="genero"
                                 value={formData.genero || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             >
                                 <option value="">Selecione</option>
                                 <option value="Masculino">Masculino</option>
                                 <option value="Feminino">Feminino</option>
                                 <option value="Outro">Outro</option>
+                                <option value="Não informado">Não informado</option>
                             </select>
                         </div>
 
@@ -167,105 +206,84 @@ export default function EditScreenPaciente() {
                                 name="telefone"
                                 value={formData.telefone || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
                             <input
-                                type="date"
+                                type="text"
                                 name="nascimento"
+                                placeholder="DD/MM/YYYY"
                                 value={formData.nascimento || ""}
-                                onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                onChange={handleDateChange}
+                                maxLength={10}
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
-                        {/* Dados de Suporte */}
+                        {/* Dados do Professor */}
                         <div className="col-span-1 md:col-span-2 mt-4">
-                            <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Informações de Suporte</h3>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Dados da Orientação</h3>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nível de Suporte</label>
-                            <select
-                                name="nivel_suporte"
-                                value={formData.nivel_suporte || ""}
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Curso</label>
+                            <input
+                                type="text"
+                                name="curso"
+                                placeholder="Ex: Psicologia"
+                                value={formData.curso || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
-                            >
-                                <option value="">Selecione</option>
-                                <option value="N1">Nível 1 (Suporte Leve)</option>
-                                <option value="N2">Nível 2 (Suporte Moderado)</option>
-                                <option value="N3">Nível 3 (Suporte Substancial)</option>
-                            </select>
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Comorbidades</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade</label>
                             <input
                                 type="text"
-                                name="comodidade"
-                                placeholder="Ex: TDAH, Ansiedade"
-                                value={formData.comodidade || ""}
+                                name="especialidade"
+                                placeholder="Ex: Neuropsicologia"
+                                value={formData.especialidade || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Medicação</label>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Início da Orientação</label>
                             <input
                                 type="text"
-                                name="remedios"
-                                value={formData.remedios || ""}
+                                name="inicio_orientacao"
+                                placeholder="Ex: 2024.1"
+                                value={formData.inicio_orientacao || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Estereotipia</label>
-                            <textarea
-                                name="estereotipia"
-                                rows={3}
-                                value={formData.estereotipia || ""}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Fim da Orientação</label>
+                            <input
+                                type="text"
+                                name="fim_orientacao"
+                                placeholder="Ex: 2024.2"
+                                value={formData.fim_orientacao || ""}
                                 onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
-                            />
-                        </div>
-
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Reforçador Positivo</label>
-                            <textarea
-                                name="reforco_positivo"
-                                rows={2}
-                                value={formData.reforco_positivo || ""}
-                                onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
-                            />
-                        </div>
-
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Reforçador Negativo</label>
-                            <textarea
-                                name="reforco_negativo"
-                                rows={2}
-                                value={formData.reforco_negativo || ""}
-                                onChange={handleInputChange}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#335B8D]"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFDFA4]"
                             />
                         </div>
 
                     </div>
 
-                    <div className="mt-8 flex justify-end">
+                    <div className="flex justify-end mt-10">
                         <button
                             onClick={handleSave}
-                            className="bg-[#335B8D] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#2a4a75] transition shadow-md"
+                            className="bg-[#6d94c5] text-white font-semibold py-3 px-8 rounded-lg shadow hover:bg-[#5a7da8] transition duration-200"
                         >
-                            Salvar Alterações
+                            Salvar Edição
                         </button>
                     </div>
 
