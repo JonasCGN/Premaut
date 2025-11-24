@@ -27,7 +27,7 @@ export const ShowCards: React.FC<ShowCardsProps> = ({ images = [] }) => {
 
     return (
         <div
-            className="show-cards relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
+            className="show-cards relative w-full px-4 sm:px-6 lg:px-8"
             style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -60,13 +60,16 @@ export const ShowCards: React.FC<ShowCardsProps> = ({ images = [] }) => {
                 </button>
             )}
 
-            <div className="w-full max-w-4xl mx-auto p-4">
+            <div className="p-4 flex justify-center items-center">
                 <img
                     src={images[index]}
                     alt={`imagem-${index}`}
-                    className='w-full rounded-lg shadow-lg'
-                    style={{ 
+                    className="rounded-lg shadow-lg"
+                    style={{
+                        height: '650px',
                         objectFit: 'cover',
+                        maxWidth: '100%',
+                        maxHeight: '100%',
                     }}
                 />
             </div>
