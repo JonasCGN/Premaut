@@ -47,7 +47,7 @@ export const TopBar: React.FC = () => {
         style={{ boxShadow: '0 8px 6px rgba(0, 0, 0, 0.3)' }}
       >
         <nav className="flex items-center space-x-4">
-          <a href="#inicio" className={styles.topbarLink}>Inicio</a>
+          <a href="/" className={styles.topbarLink}>Inicio</a>
           <a href="#noticias" className={styles.topbarLink}>Noticias</a>
           <a href="#sobre" className={styles.topbarLink}>Sobre</a>
           {isLoggedIn && canAccessPanel() && (
