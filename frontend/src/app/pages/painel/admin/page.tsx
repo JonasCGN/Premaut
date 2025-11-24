@@ -5,10 +5,17 @@ import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
 import { listarUsuarios, buscarUsuarios, Usuario } from "../../../services/adminService";
-import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/app/components/ProtectedRoute";
 
 export default function TelaAdmin() {
-  const router = useRouter();
+  return (
+    <ProtectedRoute requiredUserType="admin">
+      <AdminContent />
+    </ProtectedRoute>
+  );
+}
+
+function AdminContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("ALUNO");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);

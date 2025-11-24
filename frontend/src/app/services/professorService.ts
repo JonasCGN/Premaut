@@ -1,4 +1,5 @@
 import ConfigApp from "../components/config/config";
+import { getAuthHeaders } from "../utils/auth";
 
 const API_URL = ConfigApp.URL_API;
 
@@ -30,10 +31,7 @@ export async function buscarProfessorPorId(id: string) {
 // Buscar professor para edição
 export async function buscarProfessorParaEdicao(id: string) {
   const res = await fetch(`${API_URL}/api/professor/${id}`, {
-    headers: {
-      "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`,
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Erro ao buscar dados do professor');
   return res.json();
@@ -43,10 +41,7 @@ export async function buscarProfessorParaEdicao(id: string) {
 export async function atualizarProfessor(id: string, data: Professor) {
   const res = await fetch(`${API_URL}/api/professor/${id}`, {
     method: "PUT",
-    headers: {
-      "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`,
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 

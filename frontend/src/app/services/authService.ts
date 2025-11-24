@@ -1,4 +1,5 @@
 import ConfigApp from "../components/config/config";
+import { setAuthUserId, getAuthHeaders, UserData } from "../utils/auth";
 
 const API_URL = `${ConfigApp.URL_API}/api/usuarios`;
 
@@ -31,8 +32,13 @@ export interface RedefinirSenhaData {
   novaSenha: string;
 }
 
+export interface AuthResponse {
+  message: string;
+  usuario: UserData;
+}
+
 // Login
-export async function login(data: LoginData) {
+export async function login(data: LoginData): Promise<AuthResponse> {
   const resposta = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -45,11 +51,22 @@ export async function login(data: LoginData) {
     throw new Error(result.error || "Erro ao fazer login.");
   }
 
+  // Salvar userId e dados do usuário nos cookies
+  if (result.usuario) {
+    setAuthUserId(result.usuario.id, result.usuario);
+    
+    // Remove dados antigos do localStorage se existirem
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  }
+
   return result;
 }
 
 // Cadastro
-export async function cadastro(data: CadastroData) {
+export async function cadastro(data: CadastroData): Promise<AuthResponse> {
   const resposta = await fetch(`${API_URL}/cadastro`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -65,6 +82,17 @@ export async function cadastro(data: CadastroData) {
 
   if (!resposta.ok) {
     throw new Error(result.error || result.mensagem || "Erro ao cadastrar usuário.");
+  }
+
+  // Salvar userId e dados do usuário nos cookies
+  if (result.usuario) {
+    setAuthUserId(result.usuario.id, result.usuario);
+    
+    // Remove dados antigos do localStorage se existirem
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
   }
 
   return result;
