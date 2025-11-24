@@ -4,7 +4,7 @@ import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
 import Colors from '@/app/components/color';
 import { buscarMateriais } from '@/app/services/materiaisService';
-import { Material } from '@/app/types/material';
+import { Material } from '@/types/material';
 import React from 'react';
 
 export const MateriaisApoio: React.FC = () => {

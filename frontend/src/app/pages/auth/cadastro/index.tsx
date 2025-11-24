@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { cadastro, CadastroData } from "../../../services/authService";
 import "./styles.css";
 import Icons from "@/app/components/assets/icons";
 
@@ -51,18 +52,7 @@ export default function Cadastro() {
         }),
       });
 
-      // Tenta ler JSON, mas cuidado se não vier JSON
-      let data;
-      try {
-        data = await resposta.json();
-      } catch (err) {
-        throw new Error("Resposta do servidor não é JSON");
-      }
-
-      if (!resposta.ok) {
-        throw new Error(data.error || data.mensagem || "Erro ao cadastrar usuário.");
-      }
-
+      await cadastro(data);
       setMensagem("Usuário cadastrado com sucesso!");
       setTimeout(() => router.push("./login"), 1500);
     } catch (erro: any) {

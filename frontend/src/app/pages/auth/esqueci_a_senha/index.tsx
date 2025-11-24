@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image"; // Importa Next Image para otimização
+import { esqueciSenha, EsqueciSenhaData } from "../../../services/authService";
 import "./styles.css";
 
 const EsqueciASenha: React.FC = () => {
@@ -23,21 +24,10 @@ const EsqueciASenha: React.FC = () => {
     setMensagem("");
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
-      const resposta = await fetch(`${API_BASE}/api/usuarios/esqueci-senha`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(data.error || "Erro ao enviar código.");
-      }
-
+      const data: EsqueciSenhaData = { email };
+      await esqueciSenha(data);
+      
       setMensagem("Código enviado com sucesso!");
-
       setTimeout(() => {
         router.push(`./codigo?email=${encodeURIComponent(email)}`);
       }, 1000);

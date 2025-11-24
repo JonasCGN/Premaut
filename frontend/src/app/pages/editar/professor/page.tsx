@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import { useRouter } from 'next/navigation';
+import { buscarProfessorParaEdicao, atualizarProfessor, Professor } from '../../../services/professorService';
 
 interface ProfessorPerfilEdit {
     nome: string;
@@ -37,15 +38,10 @@ export default function EditScreenProfessor() {
             return;
         }
 
-        // Busca dados para edição
-        fetch(`/api/professor/${user.id}`, {
-            headers: { "Content-Type": "application/json" },
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("Erro ao carregar dados");
-                return res.json();
-            })
-            .then(data => {
+        const fetchData = async () => {
+            try {
+                // Busca dados para edição
+                const data = await buscarProfessorParaEdicao(user.id);
                 // Formata a data para DD/MM/YYYY se existir
                 const perfil = data.perfil;
                 if (perfil.nascimento) {
@@ -55,12 +51,14 @@ export default function EditScreenProfessor() {
                 }
                 setFormData(perfil);
                 setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
                 setLoading(false);
                 router.push("/perfil/professor");
-            });
+            }
+        };
+
+        fetchData();
     }, [router]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -102,21 +100,12 @@ export default function EditScreenProfessor() {
         }
 
         try {
-            const res = await fetch(`/api/professor/${user.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...formData,
-                    nascimento: nascimentoISO,
-                }),
-            });
+            const professorData: Professor = {
+                ...formData,
+                nascimento: nascimentoISO,
+            };
 
-            if (!res.ok) {
-                const errData = await res.json();
-                const errorMessage = errData.details || errData.error || "Erro ao atualizar perfil";
-                throw new Error(errorMessage);
-            }
-
+            await atualizarProfessor(user.id, professorData);
             alert("Perfil atualizado com sucesso!");
             router.push("/perfil/professor");
         } catch (error: any) {

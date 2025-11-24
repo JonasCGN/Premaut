@@ -5,6 +5,12 @@ import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
 import { useRouter } from 'next/navigation';
+import {
+    buscarPerfilMonitor,
+    buscarPacientesMonitor,
+    buscarPacientesDisponiveis,
+    vincularPaciente
+} from '../../../services/monitorService';
 
 interface PerfilMonitor {
   nome: string;
@@ -60,35 +66,32 @@ export default function ScreenMonitor() {
       return;
     }
 
-    // 1. Busca Perfil
-    fetch(`/api/monitor/perfil/${user.id}`, {
-      headers: { "Content-Type": "application/json" },
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Erro ao carregar perfil");
-        return res.json();
-      })
-      .then(data => {
+    const fetchData = async () => {
+      try {
+        // 1. Busca Perfil
+        const data = await buscarPerfilMonitor(user.id);
         setPerfil(data.perfil);
-      })
-      .catch(err => {
+
+        // 2. Busca Alunos Vinculados
+        await fetchLinkedStudents(user.id);
+      } catch (err) {
         console.error(err);
         router.push("/auth/login");
-      });
+      }
+    };
 
-    // 2. Busca Alunos Vinculados
-    fetchLinkedStudents(user.id);
-
+    fetchData();
   }, [router]);
 
-  const fetchLinkedStudents = (monitorId: string) => {
-    fetch(`/api/monitor/pacientes/${monitorId}`)
-      .then(res => res.json())
-      .then(data => {
-        setAlunos(data.alunos || []);
-        setLoading(false);
-      })
-      .catch(err => console.error(err));
+  const fetchLinkedStudents = async (monitorId: string) => {
+    try {
+      const data = await buscarPacientesMonitor(monitorId);
+      setAlunos(data.alunos || []);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
 
   const handleEditClick = () => {
@@ -103,20 +106,20 @@ export default function ScreenMonitor() {
     router.push("/cadastrar/paciente");
   };
 
-  const handleVincularClick = () => {
+  const handleVincularClick = async () => {
     setShowAddMenu(false);
     const userData = localStorage.getItem("user");
     if (!userData) return;
     const user = JSON.parse(userData);
 
-    // Busca pacientes disponíveis
-    fetch(`/api/monitor/pacientes/disponiveis/${user.id}`)
-      .then(res => res.json())
-      .then(data => {
-        setAvailablePatients(data.pacientes || []);
-        setShowLinkModal(true);
-      })
-      .catch(err => alert("Erro ao buscar pacientes disponíveis."));
+    try {
+      // Busca pacientes disponíveis
+      const data = await buscarPacientesDisponiveis(user.id);
+      setAvailablePatients(data.pacientes || []);
+      setShowLinkModal(true);
+    } catch (err) {
+      alert("Erro ao buscar pacientes disponíveis.");
+    }
   };
 
   const handleSaveLink = async () => {
@@ -127,19 +130,10 @@ export default function ScreenMonitor() {
     const user = JSON.parse(userData);
 
     try {
-      const res = await fetch("/api/monitor/pacientes/vincular", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          monitorId: user.id,
-          pacienteId: selectedPatient
-        })
+      await vincularPaciente({
+        monitorId: user.id,
+        pacienteId: selectedPatient
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Erro ao vincular");
-      }
 
       alert("Paciente vinculado com sucesso!");
       setShowLinkModal(false);

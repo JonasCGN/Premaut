@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import TopBar from "@/app/components/TopBarComponent";
 import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
+import { buscarPacientes } from '../../../services/pacienteService';
 import './styles.css';
 
 // Tipo compatível com o que o backend retorna de /pacientes
@@ -27,18 +28,7 @@ export default function HomePage() {
         setLoading(true);
         setError(null);
 
-        // 🔴 AJUSTE AQUI PARA CASAR COM O PREFIXO DO BACKEND
-        // Se no backend estiver app.use('/api/pacientes', pacientesRoutes);
-        const API_BASE = process.env.NEXT_PUBLIC_URL_API || "http://localhost:3001";
-        const res = await fetch(`${API_BASE}/api/pacientes`);
-        // Se no seu código for app.use('/pacientes', pacientesRoutes);
-        // use: const res = await fetch(`${API_BASE}/pacientes`);
-
-        if (!res.ok) {
-          throw new Error(`Erro ao buscar pacientes: ${res.status}`);
-        }
-
-        const data: Paciente[] = await res.json();
+        const data = await buscarPacientes();
         setPacientes(data || []);
       } catch (err: any) {
         console.error("Erro ao buscar pacientes:", err);
