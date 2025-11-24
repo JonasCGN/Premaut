@@ -10,7 +10,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import './styles.css';
 import { buscarMateriais } from '@/app/services/materiaisService';
-import { Material } from '@/types/material';
+import { Material } from '@/app/types/material';
 
 export const MateriaisApoio: React.FC = () => {
     const [materiais, setMateriais] = React.useState<Material[]>([]);

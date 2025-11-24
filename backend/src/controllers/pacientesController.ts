@@ -2,9 +2,22 @@ import { Request, Response } from 'express';
 import { supabase } from '../services/supabaseClient';
 
 export const getPacientes = async (req: Request, res: Response) => {
-  const { data, error } = await supabase.from('pacientes').select('*');
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  try {
+    const { nome } = req.query;
+
+    let query = supabase.from('pacientes').select('*');
+
+    if (nome && String(nome).trim()) {
+      query = query.ilike('nome', `%${String(nome)}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data || []);
+  } catch (err: any) {
+    console.error('[getPacientes] erro inesperado:', err);
+    return res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
 };
 
 export const getPacienteById = async (req: Request, res: Response) => {

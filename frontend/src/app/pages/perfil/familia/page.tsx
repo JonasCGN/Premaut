@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import ImageAssets from '@/app/components/assets/images'; // Renomeei para evitar conflito com o componente Image do Next ou HTML
 import Icons from '@/app/components/assets/icons';
 import { buscarPacientePorId } from '../../../services/pacienteService';
-import { buscarRelatorios } from '../../../services/relatorioService';
 import {
   LineChart,
   Line,
@@ -62,73 +61,88 @@ function ScreenFamillyContent() {
   const [stats, setStats] = useState({ incidentes: 0, autocorreceo: 0 });
 
   // Lógica do ID
-  const PACIENTE_ID = idUrl || "5f8d04f6-8864-4c1f-9638-7c7a05996e1d";
+  // Aqui o `id` da query pode ser o ID do familiar (usuario) —
+  // Quando a página é acessada a partir do painel admin, passamos o Usuario.id.
+  // Logo, primeiro buscamos os pacientes vinculados a esse familiar e usamos
+  // o primeiro paciente para popular o perfil (comportamento atual).
+  const USUARIO_ID = idUrl || "";
+  const PACIENTE_ID = "";
 
   useEffect(() => {
     async function fetchData() {
-      if (!PACIENTE_ID) return;
+      if (!USUARIO_ID && !PACIENTE_ID) return;
 
+      setLoading(true);
       try {
-        setLoading(true);
-
-        // 1. Buscar dados do Paciente usando o serviço
+        // 1. Se temos um usuario (familiar) na query, buscar pacientes vinculados
         try {
-          const dataPaciente = await buscarPacientePorId(PACIENTE_ID);
-          setPaciente(dataPaciente);
-        } catch (err) {
-          console.error("Erro ao buscar paciente:", err);
-          setPaciente(null);
-        }
+          if (USUARIO_ID) {
+            const { buscarPacientesPorFamiliar } = await import('../../../services/pacienteService');
+            const pacientesVinculados = await buscarPacientesPorFamiliar(USUARIO_ID);
+            if (!pacientesVinculados || pacientesVinculados.length === 0) {
+              console.warn('[perfil/familia] nenhum paciente vinculado ao usuario', USUARIO_ID);
+              setPaciente(null);
+              setRelatorios([]);
+            } else {
+              const primeiro = pacientesVinculados[0];
+              setPaciente(primeiro);
 
-        // 2. Buscar Relatórios usando o serviço
-        try {
-          const dataRelatorios = await buscarRelatorios();
-
-          // Filtragem local pelo ID do paciente
-          const meusRelatorios = dataRelatorios.filter((r: any) => String(r.paciente_id) === String(PACIENTE_ID));
-          setRelatorios(meusRelatorios);
+              // Buscar relatórios apenas do paciente selecionado
+              try {
+                const { buscarRelatoriosPaciente } = await import('../../../services/pacienteService');
+                const rels = await buscarRelatoriosPaciente(primeiro.id);
+                setRelatorios(rels || []);
+              } catch (err) {
+                console.error('[perfil/familia] erro ao buscar relatorios do paciente:', err);
+                setRelatorios([]);
+              }
+            }
+          } else {
+            // fallback: se NÃO houver usuario id na query, tentamos usar um paciente direto
+            const { buscarPacientePorId } = await import('../../../services/pacienteService');
+            try {
+              const dataPaciente = await buscarPacientePorId(PACIENTE_ID || '');
+              setPaciente(dataPaciente);
+            } catch (err) {
+              console.error("Erro ao buscar paciente:", err);
+              setPaciente(null);
+            }
+          }
 
           // 3. Calcular Estatísticas Totais
-          const totalIncidentes = meusRelatorios.filter((r: any) => r.tipo?.toLowerCase().includes('incidente')).length;
-          const totalAutocorreceo = meusRelatorios.filter((r: any) => r.tipo?.toLowerCase().includes('autocorreção') || r.tipo?.toLowerCase().includes('autocorrecao')).length;
-          
+          // Agora `relatorios` já foi populado (ou está vazio). Calculamos estatísticas e chart.
+          const meusRelatorios = relatorios || [];
+          const totalIncidentes = meusRelatorios.filter((r: any) => String(r.tipo || '').toLowerCase().includes('incidente')).length;
+          const totalAutocorreceo = meusRelatorios.filter((r: any) => {
+            const t = String(r.tipo || '').toLowerCase();
+            return t.includes('autocorreção') || t.includes('autocorrecao');
+          }).length;
           setStats({ incidentes: totalIncidentes, autocorreceo: totalAutocorreceo });
 
-          // 4. Processar Dados para o Gráfico (Agrupar por Data)
           const groupedData: Record<string, ChartDataPoint> = {};
-
-          meusRelatorios.forEach(relatorio => {
-            // Extrai apenas a data YYYY-MM-DD
-            const dataIso = new Date(relatorio.created_at).toISOString().split('T')[0];
-            
+          (meusRelatorios || []).forEach((relatorio: any) => {
+            const created = relatorio.created_at || relatorio.createdAt || new Date().toISOString();
+            const dataIso = new Date(created).toISOString().split('T')[0];
             if (!groupedData[dataIso]) {
               groupedData[dataIso] = {
                 date: dataIso,
-                displayDate: new Date(relatorio.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                displayDate: new Date(created).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 incidentes: 0,
                 autocorrecao: 0
               };
             }
-
-            const tipo = relatorio.tipo?.toLowerCase() || '';
-            if (tipo.includes('incidente')) {
-              groupedData[dataIso].incidentes += 1;
-            } else if (tipo.includes('autocorreção') || tipo.includes('autocorrecao')) {
-              groupedData[dataIso].autocorrecao += 1;
-            }
+            const tipo = String(relatorio.tipo || '').toLowerCase();
+            if (tipo.includes('incidente')) groupedData[dataIso].incidentes += 1;
+            if (tipo.includes('autocorreção') || tipo.includes('autocorrecao')) groupedData[dataIso].autocorrecao += 1;
           });
 
-          // Transformar objeto em array e ordenar por data
-          const chartArray = Object.values(groupedData).sort((a, b) => 
-            new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
-
+          const chartArray = Object.values(groupedData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           setChartData(chartArray);
-
-        } else {
-          console.error("Erro ao buscar relatórios:", resRelatorios.statusText);
+        } catch (err) {
+          console.error('Erro ao buscar relatórios:', err);
+          setRelatorios([]);
+          setChartData([]);
         }
-
       } catch (error) {
         console.error("Erro de conexão com o backend:", error);
       } finally {
@@ -137,7 +151,7 @@ function ScreenFamillyContent() {
     }
 
     fetchData();
-  }, [API_URL, PACIENTE_ID]);
+  }, [USUARIO_ID]);
 
   // Funções utilitárias de formatação
   const formatarData = (dataISO: string) => {

@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
 import { listarUsuarios, buscarUsuarios, Usuario } from "../../../services/adminService";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
+import { useRouter } from 'next/navigation';
 
 export default function TelaAdmin() {
   return (
@@ -16,8 +17,9 @@ export default function TelaAdmin() {
 }
 
 function AdminContent() {
+  const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState("ALUNO");
+  const [selectedFilter, setSelectedFilter] = useState("PACIENTE");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,8 +29,6 @@ function AdminContent() {
     "MONITOR", 
     "PROFESSOR",
     "FAMILIAR",
-    "ALUNO",
-    "COMUM",
   ];
 
   // Function to fetch users based on filter
@@ -36,18 +36,32 @@ function AdminContent() {
     try {
       setLoading(true);
       
+      // Normalize filter to backend expected type
+      const mapFilterToQueryType = (opt: string) => {
+        const tipo = String(opt).toUpperCase();
+        // Observação: no banco os pacientes comuns foram gravados como 'comum',
+        // então mapeamos PACIENTE/COMUM/ALUNO para 'comum' ao buscar.
+        if (tipo === 'PACIENTE' || tipo === 'COMUM' || tipo === 'ALUNO') return 'comum';
+        if (tipo === 'MONITOR') return 'monitor';
+        if (tipo === 'PROFESSOR') return 'professor';
+        if (tipo === 'FAMILIAR') return 'familia';
+        return tipo.toLowerCase();
+      };
+
+      const queryTipo = mapFilterToQueryType(tipoUsuario);
+      console.log('[Admin] fetchUsers queryTipo=', queryTipo, 'searchText=', searchText);
+
       let usuarios: Usuario[];
-      
       if (searchText?.trim()) {
         // Se há termo de busca, usar a função de busca
         usuarios = await buscarUsuarios({
           nome: searchText,
-          tipo: tipoUsuario.toLowerCase()
+          tipo: queryTipo
         });
       } else {
         // Senão, apenas listar por tipo
         usuarios = await listarUsuarios({
-          tipo: tipoUsuario.toLowerCase()
+          tipo: queryTipo
         });
       }
       
@@ -187,7 +201,21 @@ function AdminContent() {
                   </p>
 
                   {/* Botão */}
-                  <button className="bg-[#009B9E] text-white rounded-full px-6 py-3 text-base font-semibold shadow-md hover:bg-[#007f80] transition">
+                  <button
+                    className="bg-[#009B9E] text-white rounded-full px-6 py-3 text-base font-semibold shadow-md hover:bg-[#007f80] transition"
+                    onClick={() => {
+                      // Direciona para o tipo de perfil correspondente ao filtro atual
+                      const tipo = String(selectedFilter).toUpperCase();
+                      let path = '/perfil/professor';
+                      if (tipo === 'PACIENTE') path = '/perfil/paciente';
+                      else if (tipo === 'MONITOR') path = '/perfil/monitor';
+                      else if (tipo === 'PROFESSOR') path = '/perfil/professor';
+                      else if (tipo === 'FAMILIAR') path = '/perfil/familia';
+                      console.log('[Admin] Verificar perfil click', { tipo, userId: user.id, path });
+
+                      router.push(`${path}?id=${user.id}`);
+                    }}
+                  >
                     Verificar perfil
                   </button>
                 </div>

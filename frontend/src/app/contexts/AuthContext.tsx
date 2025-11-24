@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
     setUserId(authUserId || null);
     setLoading(false);
+    console.log('[AuthContext] init ->', { authenticated, userData, authUserId });
   }, []);
 
   const handleLogin = (newUserId: string, userData: UserData) => {
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserId(newUserId);
     setUser(userData);
     setIsLoggedIn(true);
+    console.log('[AuthContext] login ->', { newUserId, userData });
   };
 
   const handleLogout = () => {
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserId(null);
     setUser(null);
     setIsLoggedIn(false);
+    console.log('[AuthContext] logout');
   };
 
   const value: AuthContextType = {
