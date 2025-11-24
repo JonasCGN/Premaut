@@ -73,6 +73,8 @@ export const MateriaisApoio: React.FC = () => {
             {filteredLivros.map((item, index) => (
                 <div
                     key={index}
+                    onClick={() => window.location.href = `/apoio/material/${item.id}`}
+                    className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
                     style={{
                         display: 'flex',
                         flexDirection: 'column',
