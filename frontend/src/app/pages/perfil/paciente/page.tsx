@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import TopBar from "@/app/components/TopBarComponent";
 import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
+import { buscarPacientePorId, buscarRelatoriosPaciente } from '../../../services/pacienteService';
 import {
   LineChart,
   Line,
@@ -67,30 +68,15 @@ export default function ScreenPaciente() {
       return;
     }
 
-    // Busca dados do paciente e relatórios usando a base da API (evita 404 quando o backend roda em outra porta)
-    const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
+    // Busca dados do paciente e relatórios usando os serviços
+    const fetchData = async () => {
+      try {
+        const [pacienteData, relatoriosData] = await Promise.all([
+          buscarPacientePorId(id),
+          buscarRelatoriosPaciente(id)
+        ]);
 
-    const fetchPaciente = fetch(`${API_BASE}/api/pacientes/${id}`).then(async (res) => {
-      if (!res.ok) {
-        const text = await res.text().catch(() => null);
-        throw new Error(text || `Erro ${res.status} ao buscar paciente`);
-      }
-      return res.json();
-    });
-
-    const fetchRelatorios = fetch(`${API_BASE}/api/relatorios/paciente/${id}`).then(async (res) => {
-      if (!res.ok) {
-        // se não encontrar relatórios, retornar array vazio ao invés de falhar
-        if (res.status === 404) return [];
-        const text = await res.text().catch(() => null);
-        throw new Error(text || `Erro ${res.status} ao buscar relatórios`);
-      }
-      return res.json();
-    });
-
-    Promise.all([fetchPaciente, fetchRelatorios])
-      .then(([pacienteData, relatoriosData]) => {
-        if (!pacienteData) throw new Error('Paciente não encontrado');
+        if (pacienteData.error) throw new Error(pacienteData.error);
         setPaciente(pacienteData);
 
         if (Array.isArray(relatoriosData)) {
@@ -103,7 +89,10 @@ export default function ScreenPaciente() {
       .catch(err => {
         console.error('Erro carregando paciente/relatórios:', err);
         setLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, [id]);
 
   const processStatsAndChart = (data: Relatorio[]) => {

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { login, LoginData } from "../../../services/authService";
 import './styles.css';
 
 const Login: React.FC = () => {
@@ -18,20 +19,10 @@ const Login: React.FC = () => {
     setMensagem("");
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
-      const resposta = await fetch(`${API_BASE}/api/usuarios/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha }),
-      });
+      const data: LoginData = { email, senha };
+      const result = await login(data);
 
-      const data = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(data.error || "Erro ao fazer login.");
-      }
-
-      setMensagem(data.message);
+      setMensagem(result.message);
       setTimeout(() => router.push("/home"), 1000);
     } catch (erro: any) {
       setMensagem(erro.message || "Erro ao fazer login.");
