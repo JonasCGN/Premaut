@@ -15,7 +15,9 @@ export const getRelatorioById = async (req: Request, res: Response) => {
 };
 
 export const createRelatorio = async (req: Request, res: Response) => {
-  const { assunto, body, tipo, pacienteId } = req.body;
+  const { assunto, body, tipo } = req.body;
+  const pacienteId = req.body.pacienteId || req.body.paciente_id || null;
+
   const { data, error } = await supabase
     .from('relatorios')
     .insert([{ assunto, body, tipo, paciente_id: pacienteId }])
@@ -27,7 +29,8 @@ export const createRelatorio = async (req: Request, res: Response) => {
 
 export const updateRelatorio = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { assunto, body, tipo, pacienteId } = req.body;
+  const { assunto, body, tipo } = req.body;
+  const pacienteId = req.body.pacienteId || req.body.paciente_id || null;
   console.log('Controller update, id:', id, typeof id);
   const { data, error } = await supabase
     .from('relatorios')
@@ -104,5 +107,23 @@ export const getRelatorioStats = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Erro ao buscar estatísticas:', error);
     return res.status(500).json({ error: error.message });
+  }
+};
+
+// Listar relatórios por paciente (rota: GET /api/relatorios/paciente/:id)
+export const getRelatoriosByPaciente = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('relatorios')
+      .select('*')
+      .eq('paciente_id', id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data);
+  } catch (error: any) {
+    console.error('Erro ao buscar relatórios por paciente:', error);
+    return res.status(500).json({ error: error.message || 'Erro desconhecido' });
   }
 };

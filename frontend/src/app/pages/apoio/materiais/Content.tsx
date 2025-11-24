@@ -73,6 +73,8 @@ export const MateriaisApoio: React.FC = () => {
             {filteredLivros.map((item, index) => (
                 <div
                     key={index}
+                    onClick={() => window.location.href = `/apoio/material/${item.id}`}
+                    className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
                     style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -166,7 +168,20 @@ export const MateriaisApoio: React.FC = () => {
 
     return (
         <div className="flex flex-col min-h-screen p-6">
+            <div>
+                <button
+                    type="button"
+                    onClick={() => window.history.back()}
+                    style={{
+                        cursor: 'pointer'
+                    }}
+                    aria-label="Voltar"
+                >
+                    <img src={Icons.mdi_arrow_back} alt="Voltar" className="w-12 h-12" />
+                </button>
+            </div>
             <div className="flex flex-row items-end justify-end">
+
                 <div
                     style={{
                         position: 'relative',

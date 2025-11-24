@@ -1,13 +1,13 @@
 "use client";
 
-
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
+import Image from "next/image"; // Importa Next Image para otimização
+import { esqueciSenha, EsqueciSenhaData } from "../../../services/authService";
 import "./styles.css";
 
-
-const Esqueci_a_senha: React.FC = () => {
+const EsqueciASenha: React.FC = () => {
   const [email, setEmail] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -24,23 +24,11 @@ const Esqueci_a_senha: React.FC = () => {
     setMensagem("");
 
     try {
-      const resposta = await fetch("http://localhost:3001/api/usuarios/esqueci-senha", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(data.error || "Erro ao enviar código.");
-      }
-
+      const data: EsqueciSenhaData = { email };
+      await esqueciSenha(data);
+      
       setMensagem("Código enviado com sucesso!");
-
-   
       setTimeout(() => {
-  
         router.push(`./codigo?email=${encodeURIComponent(email)}`);
       }, 1000);
 
@@ -55,20 +43,27 @@ const Esqueci_a_senha: React.FC = () => {
     <div className="container">
       <div className="content">
         <div className="logo-icon">
-          <img src="/assets/images/logo_completa.png" alt="Logo PREMAUT" className="logo-img" />
+          <Image
+            src="/assets/images/logo_completa.png"
+            alt="Logo PREMAUT"
+            width={200} // ajuste conforme necessário
+            height={60} // ajuste conforme necessário
+            className="logo-img"
+          />
         </div>
+
         <div className="login-card">
-          <div className="login-title">Esqueceu sua senha</div>
-          <div className="login-description">
+          <h2 className="login-title">Esqueceu sua senha</h2>
+          <p className="login-description">
             Digite o seu e-mail para recuperar sua conta.
             Um código de confirmação será enviado para o seu e-mail.
-          </div>
+          </p>
 
           <div className="campo">
             <label htmlFor="email">E-mail</label>
             <input
               id="email"
-              type="text"
+              type="email" // melhor prática usar type="email"
               placeholder="Digite seu e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -88,7 +83,7 @@ const Esqueci_a_senha: React.FC = () => {
           <div className="register-link">
             <span>Não possui cadastro? </span>
             <Link href="./cadastro" className="register-link-highlight">
-              <span>Cadastre-se</span>
+              Cadastre-se
             </Link>
           </div>
         </div>
@@ -97,4 +92,4 @@ const Esqueci_a_senha: React.FC = () => {
   );
 };
 
-export default Esqueci_a_senha;
+export default EsqueciASenha;

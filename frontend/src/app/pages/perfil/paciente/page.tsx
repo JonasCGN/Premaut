@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
+import { buscarPacientePorId, buscarRelatoriosPaciente } from '../../../services/pacienteService';
 import {
   LineChart,
   Line,
@@ -15,6 +16,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { formatDateSafe, formatDateShort, toISODate } from '@/app/utils/formatDate';
 
 interface Paciente {
   id: string;
@@ -61,20 +63,20 @@ export default function ScreenPaciente() {
 
   useEffect(() => {
     if (!id) {
-      // Se não tiver ID, talvez redirecionar ou mostrar erro?
-      // Por enquanto, apenas para de carregar
       setLoading(false);
       return;
     }
 
-    // Busca dados do paciente
-    const fetchPaciente = fetch(`/api/pacientes/${id}`).then(res => res.json());
-    // Busca relatórios do paciente
-    const fetchRelatorios = fetch(`/api/relatorios/paciente/${id}`).then(res => res.json());
+    const fetchData = async () => {
+      try {
+        const [pacienteData, relatoriosData] = await Promise.all([
+          buscarPacientePorId(id),
+          buscarRelatoriosPaciente(id)
+        ]);
 
-    Promise.all([fetchPaciente, fetchRelatorios])
-      .then(([pacienteData, relatoriosData]) => {
         if (pacienteData.error) throw new Error(pacienteData.error);
+        // DEBUG: log raw response to inspect which field contains creation date
+        console.log('[perfil/paciente] pacienteData (raw):', pacienteData);
         setPaciente(pacienteData);
 
         if (Array.isArray(relatoriosData)) {
@@ -83,11 +85,13 @@ export default function ScreenPaciente() {
         }
 
         setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
+      } catch (error) {
+        console.error('Erro carregando paciente/relatórios:', error);
         setLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, [id]);
 
   const processStatsAndChart = (data: Relatorio[]) => {
@@ -101,12 +105,12 @@ export default function ScreenPaciente() {
     const groupedData: Record<string, ChartDataPoint> = {};
 
     data.forEach(relatorio => {
-      const dataIso = new Date(relatorio.created_at).toISOString().split('T')[0];
+      const dataIso = toISODate(relatorio.created_at) || toISODate((relatorio as any).createdAt) || toISODate(new Date());
 
       if (!groupedData[dataIso]) {
         groupedData[dataIso] = {
           date: dataIso,
-          displayDate: new Date(relatorio.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          displayDate: formatDateShort(relatorio.created_at || (relatorio as any).createdAt),
           incidentes: 0,
           autocorrecao: 0
         };
@@ -137,17 +141,9 @@ export default function ScreenPaciente() {
   }
 
   // Formata data
-  const dataNascimento = new Date(paciente.nascimento).toLocaleDateString("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
-
-  const dataCadastro = new Date(paciente.created_at).toLocaleDateString("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
+  const dataNascimento = paciente.nascimento ? formatDateSafe(paciente.nascimento, 'Não informado') : 'Não informado';
+  const createdRaw = paciente.created_at || (paciente as any).createdAt || (paciente as any).criado_em || (paciente as any).criadoEm || null;
+  const dataCadastro = createdRaw ? formatDateSafe(createdRaw, 'Data desconhecida') : 'Data desconhecida';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -335,6 +331,7 @@ export default function ScreenPaciente() {
             </div>
 
             <button
+              onClick={() => router.push(`/perfil/grafico_geral?id=${id}`)}
               className="text-white rounded-lg px-6 py-2 shadow-sm hover:opacity-90 transition"
               style={{ backgroundColor: '#335B8D' }}
             >
@@ -406,7 +403,7 @@ export default function ScreenPaciente() {
             </h3>
 
             <button
-              onClick={() => router.push(`/cadastrar/relatorio_escrever?pacienteId=${id}`)}
+              onClick={() => router.push(`/cadastrar/relatorio_escrever?paciente=${id}`)}
               className="flex items-center gap-2 text-white px-4 py-2 rounded-md shadow-md hover:opacity-90 transition"
               style={{ backgroundColor: '#335B8D' }}
             >
@@ -426,7 +423,11 @@ export default function ScreenPaciente() {
               relatorios.map((relatorio) => (
                 <div
                   key={relatorio.id}
-                  className="relative flex justify-between items-center bg-white rounded-xl shadow-md shadow-gray-200 p-4 hover:shadow-lg transition overflow-hidden"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/visualizar/relatorio?id=${relatorio.id}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/visualizar/relatorio?id=${relatorio.id}`); }}
+                  className="relative flex justify-between items-center bg-white rounded-xl shadow-md shadow-gray-200 p-4 hover:shadow-lg transition overflow-hidden cursor-pointer"
                 >
                   {/* Fundo translúcido */}
                   <div
@@ -455,9 +456,7 @@ export default function ScreenPaciente() {
                       {relatorio.tipo}
                     </p>
                   </div>
-                  <span className="relative text-xs text-gray-500">
-                    {new Date(relatorio.created_at).toLocaleDateString("pt-BR", { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
+                    <span className="relative text-xs text-gray-500">{formatDateSafe(relatorio.created_at, '-', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 </div>
               ))
             )}

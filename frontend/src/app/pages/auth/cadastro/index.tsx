@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { cadastro, CadastroData } from "../../../services/authService";
+import { useAuth } from "../../../contexts/AuthContext";
 import "./styles.css";
 import Icons from "@/app/components/assets/icons";
 
@@ -18,6 +20,7 @@ export default function Cadastro() {
   const [carregando, setCarregando] = useState(false);
 
   const router = useRouter();
+  const { login: authLogin } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,33 +40,26 @@ export default function Cadastro() {
     setMensagem("");
 
     try {
-      const resposta = await fetch("http://localhost:3001/api/usuarios/cadastro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome,
-          genero,
-          telefone,
-          email,
-          senha,
-          nascimento,
-        }),
-      });
+      const data: CadastroData = {
+        nome,
+        genero,
+        telefone,
+        email,
+        senha,
+        nascimento,
+      };
 
-      // Tenta ler JSON, mas cuidado se não vier JSON
-      let data;
-      try {
-        data = await resposta.json();
-      } catch (err) {
-        throw new Error("Resposta do servidor não é JSON");
+      const result = await cadastro(data);
+      
+      // Se recebeu os dados do usuário, faz login automático
+      if (result.usuario) {
+        authLogin(result.usuario.id, result.usuario);
+        setMensagem("Usuário cadastrado com sucesso! Redirecionando...");
+        setTimeout(() => router.push("/home"), 1500);
+      } else {
+        setMensagem("Usuário cadastrado com sucesso! Faça login para continuar.");
+        setTimeout(() => router.push("./login"), 1500);
       }
-
-      if (!resposta.ok) {
-        throw new Error(data.error || data.mensagem || "Erro ao cadastrar usuário.");
-      }
-
-      setMensagem("Usuário cadastrado com sucesso!");
-      setTimeout(() => router.push("./login"), 1500);
     } catch (erro: any) {
       console.error("Erro no cadastro:", erro);
       setMensagem(erro.message || "Erro ao cadastrar usuário.");
@@ -107,6 +103,7 @@ export default function Cadastro() {
               <label>Senha *</label>
               <input
                 type="password"
+                placeholder="Digite sua senha"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
@@ -117,6 +114,7 @@ export default function Cadastro() {
               <label>Confirmar Senha *</label>
               <input
                 type="password"
+                placeholder="Confirme sua senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
                 required

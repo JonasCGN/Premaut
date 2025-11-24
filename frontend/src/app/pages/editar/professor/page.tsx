@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import { useRouter } from 'next/navigation';
+import { buscarProfessorParaEdicao, atualizarProfessor, Professor } from '../../../services/professorService';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useSearchParams } from 'next/navigation';
 
 interface ProfessorPerfilEdit {
     nome: string;
@@ -22,46 +25,50 @@ export default function EditScreenProfessor() {
     const [formData, setFormData] = useState<ProfessorPerfilEdit | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { isLoggedIn, user: authUser, loading: authLoading } = useAuth();
+    const [targetId, setTargetId] = useState<string | null>(null);
 
     useEffect(() => {
-        const userData = localStorage.getItem("user");
-        if (!userData) {
-            router.push("/auth/login");
+        if (authLoading) return;
+
+        if (!isLoggedIn || !authUser) {
+            router.push('/auth/login');
             return;
         }
 
-        const user = JSON.parse(userData);
-        if (user.tipo_usuario !== "professor") {
-            alert("Acesso negado.");
-            router.push("/auth/login");
+        // permite que professores editem seu próprio perfil e admins editem qualquer professor
+        if (authUser.tipo_usuario !== 'professor' && authUser.tipo_usuario !== 'admin') {
+            alert('Acesso negado.');
+            router.push('/auth/login');
             return;
         }
 
-        // Busca dados para edição
-        fetch(`/api/professor/${user.id}`, {
-            headers: { "Content-Type": "application/json" },
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("Erro ao carregar dados");
-                return res.json();
-            })
-            .then(data => {
-                // Formata a data para DD/MM/YYYY se existir
+        const idFromQuery = searchParams?.get('id');
+        const resolvedId = idFromQuery || authUser.id;
+        setTargetId(resolvedId);
+
+        const fetchData = async () => {
+            try {
+                const data = await buscarProfessorParaEdicao(resolvedId);
                 const perfil = data.perfil;
-                if (perfil.nascimento) {
-                    // Assumindo que vem ISO YYYY-MM-DD
-                    const [year, month, day] = perfil.nascimento.split("-");
+                // suporta campos `nascimento` ou `nascimentoISO`
+                const nascimentoISO = perfil.nascimentoISO || perfil.nascimento;
+                if (nascimentoISO) {
+                    const [year, month, day] = nascimentoISO.split('-');
                     perfil.nascimento = `${day}/${month}/${year}`;
                 }
                 setFormData(perfil);
                 setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
                 setLoading(false);
-                router.push("/perfil/professor");
-            });
-    }, [router]);
+                router.push('/perfil/professor');
+            }
+        };
+
+        fetchData();
+    }, [authLoading, isLoggedIn, authUser, searchParams, router]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         if (formData) {
@@ -88,9 +95,7 @@ export default function EditScreenProfessor() {
     const handleSave = async () => {
         if (!formData) return;
 
-        const userData = localStorage.getItem("user");
-        if (!userData) return;
-        const user = JSON.parse(userData);
+        const user = authUser;
 
         // Converte DD/MM/YYYY para YYYY-MM-DD
         let nascimentoISO = null;
@@ -102,23 +107,17 @@ export default function EditScreenProfessor() {
         }
 
         try {
-            const res = await fetch(`/api/professor/${user.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...formData,
-                    nascimento: nascimentoISO,
-                }),
-            });
+            const professorData: Professor = {
+                ...formData,
+                nascimento: nascimentoISO,
+            };
 
-            if (!res.ok) {
-                const errData = await res.json();
-                const errorMessage = errData.details || errData.error || "Erro ao atualizar perfil";
-                throw new Error(errorMessage);
-            }
-
+            const idToUpdate = targetId || authUser?.id;
+            if (!idToUpdate) throw new Error('ID do usuário não encontrado');
+            await atualizarProfessor(idToUpdate, professorData);
             alert("Perfil atualizado com sucesso!");
-            router.push("/perfil/professor");
+            const redirectId = idToUpdate;
+            router.push(`/perfil/professor?id=${redirectId}`);
         } catch (error: any) {
             console.error(error);
             alert(`Erro ao atualizar perfil: ${error.message}`);

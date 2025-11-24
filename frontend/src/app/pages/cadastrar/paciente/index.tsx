@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import "./styles.css";
 import Image from "@/app/components/assets/images";
 import Icons from '../../../components/assets/icons';
+import ConfigApp from '@/app/components/config/config';
+import { useRouter } from 'next/navigation';
 
 export default function CadastroEvento() {
     const [genero, setGenero] = useState("");
@@ -15,12 +17,57 @@ export default function CadastroEvento() {
     const [reforcoPositivo, setReforcoPositivo] = useState("");
     const [estereotipia, setEstereotipia] = useState("");
     const [remedios, setRemedios] = useState("");
+    const [nascimento, setNascimento] = useState("");
+    const [comodidade, setComodidade] = useState("");
+    const [telefone, setTelefone] = useState("");
+    const [email, setEmail] = useState("");
 
 
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const router = useRouter();
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log({ data, criador, localizacao, descricao });
+
+        // Validação básica
+        if (!nome) return alert('Informe o nome do paciente');
+
+        const payload = {
+            nome,
+            genero,
+            nascimento,
+            telefone,
+            email,
+            nivel_suporte: suporte,
+            comodidade,
+            remedios,
+            estereotipia,
+            reforco_positivo: reforcoPositivo,
+            reforco_negativo: reforcoNegativo,
+        };
+
+        try {
+            const res = await fetch(`${ConfigApp.URL_API}/api/pacientes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => null);
+                console.error('Erro ao criar paciente', err || res.statusText);
+                return alert('Erro ao cadastrar paciente');
+            }
+
+            const created = await res.json();
+            const newId = created.id || (created[0] && created[0].id) || null;
+            alert('Paciente cadastrado com sucesso!');
+            if (newId) router.push(`/perfil/paciente?id=${newId}`);
+            else router.push('/painel');
+        } catch (error) {
+            console.error('Erro ao cadastrar paciente', error);
+            alert('Erro ao cadastrar paciente');
+        }
     };
 
     return (
@@ -119,24 +166,24 @@ export default function CadastroEvento() {
                     <div className="linha">
                         <div className="campo metade">
                             <label htmlFor="nascimento">Nascimento</label>
-                            <input id="nascimento" name="nascimento" type="date" />
+                            <input id="nascimento" name="nascimento" type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} />
                         </div>
 
                         <div className="campo metade">
                             <label htmlFor="comodilade">Comodilade</label>
-                            <input id="comodilade" name="comodilade" type="text" placeholder="Informe a comodilade" />
+                            <input id="comodilade" name="comodilade" type="text" placeholder="Informe a comodilade" value={comodidade} onChange={(e) => setComodidade(e.target.value)} />
                         </div>
                     </div>
 
                     <div className="linha">
                         <div className="campo metade">
                             <label htmlFor="telefone">Telefone</label>
-                            <input id="telefone" name="telefone" type="tel" placeholder="(99) 99999-9999" />
+                            <input id="telefone" name="telefone" type="tel" placeholder="(99) 99999-9999" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
                         </div>
 
                         <div className="campo metade">
                             <label htmlFor="email">E-mail</label>
-                            <input id="email" name="email" type="email" placeholder="email@exemplo.com" />
+                            <input id="email" name="email" type="email" placeholder="email@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                         </div>
                     </div>
 

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { redefinirSenha, RedefinirSenhaData } from "../../../services/authService";
 import "./styles.css";
 
 const Redefinir_senha: React.FC = () => {
@@ -43,25 +44,15 @@ const Redefinir_senha: React.FC = () => {
     setMensagem("");
 
     try {
-      const resposta = await fetch("http://localhost:3001/api/usuarios/redefinir-senha", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, codigo, novaSenha }),
-      });
-
-      const data = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(data.error || "Erro ao redefinir senha.");
-      }
+      const data: RedefinirSenhaData = { email, codigo, novaSenha };
+      await redefinirSenha(data);
 
       setMensagem("Senha redefinida com sucesso! Redirecionando para login...");
       setTipoMensagem("sucesso");
 
-
       setTimeout(() => {
-      router.push("./login");
-    }, 2000);
+        router.push("./login");
+      }, 2000);
     } catch (erro: any) {
       setMensagem(erro.message || "Erro ao redefinir senha.");
       setTipoMensagem("erro");
@@ -92,6 +83,7 @@ const Redefinir_senha: React.FC = () => {
                 placeholder="Digite sua nova senha"
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
+                required
               />
             </div>
 
@@ -103,6 +95,7 @@ const Redefinir_senha: React.FC = () => {
                 placeholder="Confirme sua nova senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
+                required
               />
             </div>
 
