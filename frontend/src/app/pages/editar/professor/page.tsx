@@ -116,7 +116,8 @@ export default function EditScreenProfessor() {
             if (!idToUpdate) throw new Error('ID do usuário não encontrado');
             await atualizarProfessor(idToUpdate, professorData);
             alert("Perfil atualizado com sucesso!");
-            router.push("/perfil/professor");
+            const redirectId = idToUpdate;
+            router.push(`/perfil/professor?id=${redirectId}`);
         } catch (error: any) {
             console.error(error);
             alert(`Erro ao atualizar perfil: ${error.message}`);
