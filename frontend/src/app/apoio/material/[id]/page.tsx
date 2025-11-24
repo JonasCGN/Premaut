@@ -1,12 +1,14 @@
+"use client";
+
 import React from 'react';
 import TopBar from '@/app/components/TopBar';
-import MateriaisApoio from './Content';
+import MaterialDetalhe from './Content';
 
-export default function HomePage() {
+export default function MaterialPage() {
   return (
     <main>
         <TopBar />
-        <MateriaisApoio />
+        <MaterialDetalhe />
     </main>
   );
 }
