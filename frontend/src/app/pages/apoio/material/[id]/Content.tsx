@@ -1,31 +1,40 @@
 "use client";
 
 import Icons from '@/app/components/assets/icons';
-import Image from '@/app/components/assets/images';
 import Colors from '@/app/components/color';
 import React from 'react';
+import { useParams } from 'next/navigation';
+import { buscarMateriais } from '@/app/services/materiaisService';
 
-export const MateriaisApoio: React.FC = () => {
+export const MaterialDetalhe: React.FC = () => {
+    const params = useParams();
+    const id = params?.id;
+    const [material, setMaterial] = React.useState<any>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
-    type Livro = {
-        nome: string;
-        urlDaCapa: string;
-        descricao: string;
-    };
+    React.useEffect(() => {
+        buscarMateriais()
+            .then((data) => {
+                const found = data.find((mat: any) => String(mat.id) === String(id));
+                setMaterial(found);
+                setLoading(false);
+            })
+            .catch((err) => {
+                setError(err.message);
+                setLoading(false);
+            });
+    }, [id]);
 
-    const livro: Livro =
-    {
-        nome: "Meu filho è autista e agora?",
-        urlDaCapa: Image.capaLivro,
-        descricao: "O livro fala sobre o impacto que o diagnóstico de autismo causa em uma família e como os pais podem lidar com essa nova realidade. A autora, que é mãe e professora, mistura conhecimento prático com sua experiência pessoal, trazendo um tom de conversa e acolhimento. ",
-    }
-        ;
+    if (loading) return <div className="p-8">Carregando...</div>;
+    if (error) return <div className="p-8 text-red-600">Erro: {error}</div>;
+    if (!material) return <div className="p-8">Material não encontrado.</div>;
 
     return (
         <div className="flex flex-col min-h-screen p-4">
-            <div className="">
-                <a href="/pages/apoio/materiais">
-                    <img src={Icons.mdi_arrow_back} alt="" className="w-12 h-12" />
+            <div>
+                <a href="/apoio/materiais">
+                    <img src={Icons.mdi_arrow_back} alt="Voltar" className="w-12 h-12" />
                 </a>
             </div>
             <div
@@ -37,8 +46,8 @@ export const MateriaisApoio: React.FC = () => {
                 }}
             >
                 <img
-                    src={livro.urlDaCapa}
-                    alt={`Capa de ${livro.nome}`}
+                    src={material.capa_url}
+                    alt={`Capa de ${material.nome}`}
                     style={{
                         width: '100px',
                         height: 'auto',
@@ -57,7 +66,7 @@ export const MateriaisApoio: React.FC = () => {
                             marginTop: '12px',
                         }}
                     >
-                        {livro.nome}
+                        {material.nome}
                     </h2>
                     <p
                         style={{
@@ -69,12 +78,17 @@ export const MateriaisApoio: React.FC = () => {
                             lineHeight: 'normal',
                         }}
                     >
-                        {livro.descricao}
+                        {material.descricao || 'Sem descrição.'}
                     </p>
+                    {material.qtd_paginas && (
+                        <span style={{ color: '#666', fontSize: '13px', marginTop: '8px' }}>
+                            {material.qtd_paginas} páginas
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
     );
-}
+};
 
-export default MateriaisApoio;
+export default MaterialDetalhe;
