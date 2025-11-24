@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getRelatorioById } from '@/app/services/relatorioService';
 import { getPacienteById } from '@/app/services/pacienteService'; // Importe o serviço de paciente
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import FormSection from '@/app/components/form_relatorio';
 import PatientHeader from '@/app/components/paciente_header';
 import ReportInfo from '@/app/components/report_info';

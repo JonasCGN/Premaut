@@ -43,7 +43,8 @@ const Redefinir_senha: React.FC = () => {
     setMensagem("");
 
     try {
-      const resposta = await fetch("http://localhost:3001/api/usuarios/redefinir-senha", {
+      const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
+      const resposta = await fetch(`${API_BASE}/api/usuarios/redefinir-senha`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, codigo, novaSenha }),

@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:3001/api/upload';
+import ConfigApp from "../components/config/config";
+
+const API_URL = `${ConfigApp.URL_API}/api/upload`;
 
 export async function uploadArquivo(file: File) {
   const formData = new FormData();

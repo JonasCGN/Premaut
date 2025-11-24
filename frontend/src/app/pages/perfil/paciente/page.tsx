@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
 import {
@@ -67,14 +67,30 @@ export default function ScreenPaciente() {
       return;
     }
 
-    // Busca dados do paciente
-    const fetchPaciente = fetch(`/api/pacientes/${id}`).then(res => res.json());
-    // Busca relatórios do paciente
-    const fetchRelatorios = fetch(`/api/relatorios/paciente/${id}`).then(res => res.json());
+    // Busca dados do paciente e relatórios usando a base da API (evita 404 quando o backend roda em outra porta)
+    const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
+
+    const fetchPaciente = fetch(`${API_BASE}/api/pacientes/${id}`).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => null);
+        throw new Error(text || `Erro ${res.status} ao buscar paciente`);
+      }
+      return res.json();
+    });
+
+    const fetchRelatorios = fetch(`${API_BASE}/api/relatorios/paciente/${id}`).then(async (res) => {
+      if (!res.ok) {
+        // se não encontrar relatórios, retornar array vazio ao invés de falhar
+        if (res.status === 404) return [];
+        const text = await res.text().catch(() => null);
+        throw new Error(text || `Erro ${res.status} ao buscar relatórios`);
+      }
+      return res.json();
+    });
 
     Promise.all([fetchPaciente, fetchRelatorios])
       .then(([pacienteData, relatoriosData]) => {
-        if (pacienteData.error) throw new Error(pacienteData.error);
+        if (!pacienteData) throw new Error('Paciente não encontrado');
         setPaciente(pacienteData);
 
         if (Array.isArray(relatoriosData)) {
@@ -85,7 +101,7 @@ export default function ScreenPaciente() {
         setLoading(false);
       })
       .catch(err => {
-        console.error(err);
+        console.error('Erro carregando paciente/relatórios:', err);
         setLoading(false);
       });
   }, [id]);
@@ -335,6 +351,7 @@ export default function ScreenPaciente() {
             </div>
 
             <button
+              onClick={() => router.push(`/perfil/grafico_geral?id=${id}`)}
               className="text-white rounded-lg px-6 py-2 shadow-sm hover:opacity-90 transition"
               style={{ backgroundColor: '#335B8D' }}
             >
@@ -406,7 +423,7 @@ export default function ScreenPaciente() {
             </h3>
 
             <button
-              onClick={() => router.push(`/cadastrar/relatorio_escrever?pacienteId=${id}`)}
+              onClick={() => router.push(`/cadastrar/relatorio_escrever?paciente=${id}`)}
               className="flex items-center gap-2 text-white px-4 py-2 rounded-md shadow-md hover:opacity-90 transition"
               style={{ backgroundColor: '#335B8D' }}
             >
@@ -426,7 +443,11 @@ export default function ScreenPaciente() {
               relatorios.map((relatorio) => (
                 <div
                   key={relatorio.id}
-                  className="relative flex justify-between items-center bg-white rounded-xl shadow-md shadow-gray-200 p-4 hover:shadow-lg transition overflow-hidden"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/visualizar/relatorio?id=${relatorio.id}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/visualizar/relatorio?id=${relatorio.id}`); }}
+                  className="relative flex justify-between items-center bg-white rounded-xl shadow-md shadow-gray-200 p-4 hover:shadow-lg transition overflow-hidden cursor-pointer"
                 >
                   {/* Fundo translúcido */}
                   <div

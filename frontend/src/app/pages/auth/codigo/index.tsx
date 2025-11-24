@@ -35,7 +35,8 @@ const Codigo: React.FC = () => {
     setMensagem("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/usuarios/verificar-codigo", {
+      const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE}/api/usuarios/verificar-codigo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, codigo }),

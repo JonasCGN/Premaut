@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 
 interface PacienteEdit {
@@ -27,6 +27,7 @@ export default function EditScreenPaciente() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
 
+    const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
     useEffect(() => {
         if (!id) {
             alert("ID do paciente não encontrado.");
@@ -35,7 +36,7 @@ export default function EditScreenPaciente() {
         }
 
         // Busca dados para edição
-        fetch(`/api/pacientes/editar/${id}`, {
+        fetch(`${API_BASE}/api/pacientes/editar/${id}`, {
             headers: { "Content-Type": "application/json" },
         })
             .then(res => {
@@ -68,7 +69,7 @@ export default function EditScreenPaciente() {
         if (!formData || !id) return;
 
         try {
-            const res = await fetch(`/api/pacientes/editar/${id}`, {
+            const res = await fetch(`${API_BASE}/api/pacientes/editar/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),

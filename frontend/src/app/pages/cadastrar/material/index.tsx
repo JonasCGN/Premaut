@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import './styles.css';
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
@@ -11,6 +11,8 @@ export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+
+  const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
 
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [capa, setCapa] = useState<File | null>(null);
@@ -27,7 +29,7 @@ export default function HomePage() {
 
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:3001/api/materiais/${id}`);
+        const response = await fetch(`${API_BASE}/api/materiais/${id}`);
 
         if (!response.ok) {
           throw new Error('Arquivo não encontrado');
@@ -67,7 +69,7 @@ export default function HomePage() {
     try {
       console.log(`📤 Enviando ${tipo}:`, file.name, file.type, file.size);
 
-      const response = await fetch('http://localhost:3001/api/materiais', {
+      const response = await fetch(`${API_BASE}/api/materiais`, {
         method: 'POST',
         body: formData,
       });
@@ -106,7 +108,7 @@ export default function HomePage() {
         if (url) novaCapaUrl = url;
       }
 
-      const response = await fetch(`http://localhost:3001/api/materiais/${id}/metadados`, {
+      const response = await fetch(`${API_BASE}/api/materiais/${id}/metadados`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +178,7 @@ export default function HomePage() {
       // Pega o professorId da URL
       const professorId = searchParams.get('professorId');
 
-      const response = await fetch('http://localhost:3001/api/materiais/novo', {
+      const response = await fetch(`${API_BASE}/api/materiais/novo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
