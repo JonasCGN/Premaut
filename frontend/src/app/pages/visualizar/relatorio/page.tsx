@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getRelatorioById } from '@/app/services/relatorioService';
 import { buscarPacientePorId } from '@/app/services/pacienteService';
+import { formatDateSafe, calculateAge } from '@/app/utils/formatDate';
 import TopBar from '@/app/components/TopBarComponent';
 import FormSection from '@/app/components/form_relatorio';
 import PatientHeader from '@/app/components/paciente_header';
@@ -48,20 +49,11 @@ export default function RelatorioPage() {
       fetchData();
     }, [id]);
 
-  // Função auxiliar para calcular a idade
-  const calcularIdade = (dataNascimento: string) => {
-      if (!dataNascimento) return "Não informado";
-      const hoje = new Date();
-      const nascimento = new Date(dataNascimento);
-      let idade = hoje.getFullYear() - nascimento.getFullYear();
-      const m = hoje.getMonth() - nascimento.getMonth();
-      
-      // Ajusta se ainda não fez aniversário este ano
-      if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) {
-          idade--;
-      }
-      return `${idade} anos`;
-  };
+    // Função auxiliar para calcular a idade (usa util compartilhado)
+    const calcularIdade = (dataNascimento: string) => {
+      const idade = calculateAge(dataNascimento);
+      return idade === null || idade === undefined ? 'Não informado' : `${idade} anos`;
+    };
 
   if (carregando) return <div className="flex justify-center items-center h-screen">Carregando...</div>;
   if (erro) return <div className="flex justify-center items-center h-screen text-red-500">{erro}</div>;
@@ -75,10 +67,10 @@ export default function RelatorioPage() {
           onBackClick={() => window.history.back()}
         >
           <ReportInfo 
-            date={relatorio?.created_at ? new Date(relatorio.created_at).toLocaleDateString('pt-BR') : '-'}
+            date={relatorio?.created_at ? formatDateSafe(relatorio.created_at, '-') : '-'}
             age={calcularIdade(paciente?.nascimento)}
-            responsible={paciente?.responsavel || "Em desenvolvimento..."}
-            professionalResponsible={relatorio?.profissional_responsavel || "Em desenvolvimento..."}
+            responsible={paciente?.responsavel || "Gustavo Silva"}
+            professionalResponsible={relatorio?.profissional_responsavel || "Walison W"}
           />
         </PatientHeader>
         
