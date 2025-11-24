@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
-import Icons from '@/app/components/assets/icons'; // Assuming back arrow is here or I'll use a text/svg
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { buscarMonitorParaEdicao, atualizarMonitor, Monitor } from '../../../services/monitorService';

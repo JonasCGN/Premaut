@@ -16,6 +16,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { formatDateSafe, formatDateShort, toISODate } from '@/app/utils/formatDate';
 
 interface Paciente {
   id: string;
@@ -74,6 +75,8 @@ export default function ScreenPaciente() {
         ]);
 
         if (pacienteData.error) throw new Error(pacienteData.error);
+        // DEBUG: log raw response to inspect which field contains creation date
+        console.log('[perfil/paciente] pacienteData (raw):', pacienteData);
         setPaciente(pacienteData);
 
         if (Array.isArray(relatoriosData)) {
@@ -102,12 +105,12 @@ export default function ScreenPaciente() {
     const groupedData: Record<string, ChartDataPoint> = {};
 
     data.forEach(relatorio => {
-      const dataIso = new Date(relatorio.created_at).toISOString().split('T')[0];
+      const dataIso = toISODate(relatorio.created_at) || toISODate((relatorio as any).createdAt) || toISODate(new Date());
 
       if (!groupedData[dataIso]) {
         groupedData[dataIso] = {
           date: dataIso,
-          displayDate: new Date(relatorio.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          displayDate: formatDateShort(relatorio.created_at || (relatorio as any).createdAt),
           incidentes: 0,
           autocorrecao: 0
         };
@@ -138,17 +141,9 @@ export default function ScreenPaciente() {
   }
 
   // Formata data
-  const dataNascimento = new Date(paciente.nascimento).toLocaleDateString("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
-
-  const dataCadastro = new Date(paciente.created_at).toLocaleDateString("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
+  const dataNascimento = paciente.nascimento ? formatDateSafe(paciente.nascimento, 'Não informado') : 'Não informado';
+  const createdRaw = paciente.created_at || (paciente as any).createdAt || (paciente as any).criado_em || (paciente as any).criadoEm || null;
+  const dataCadastro = createdRaw ? formatDateSafe(createdRaw, 'Data desconhecida') : 'Data desconhecida';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -461,9 +456,7 @@ export default function ScreenPaciente() {
                       {relatorio.tipo}
                     </p>
                   </div>
-                  <span className="relative text-xs text-gray-500">
-                    {new Date(relatorio.created_at).toLocaleDateString("pt-BR", { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
+                    <span className="relative text-xs text-gray-500">{formatDateSafe(relatorio.created_at, '-', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 </div>
               ))
             )}
