@@ -1,6 +1,7 @@
 import ConfigApp from "../components/config/config";
 
 const API_URL = `${ConfigApp.URL_API}/api/usuarios`;
+const PACIENTES_API_URL = `${ConfigApp.URL_API}/api/pacientes`;
 
 export interface Usuario {
   id: string;
@@ -20,6 +21,20 @@ export interface BuscarUsuariosParams {
 
 // Listar usuários por tipo
 export async function listarUsuarios(params: ListarUsuariosParams): Promise<Usuario[]> {
+  // Se o tipo for 'comum' (pacientes), chamar a rota de pacientes
+  if (params.tipo && params.tipo.toLowerCase() === 'comum') {
+    const res = await fetch(`${PACIENTES_API_URL}`);
+    if (!res.ok) throw new Error('Erro ao buscar pacientes');
+    const data = await res.json();
+    // Normaliza para a interface Usuario esperada pelo frontend
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      email: p.email || '',
+      tipo_usuario: 'comum'
+    }));
+  }
+
   const queryParams = new URLSearchParams();
   queryParams.append('tipo', params.tipo);
 
@@ -38,6 +53,19 @@ export async function buscarUsuarios(params: BuscarUsuariosParams): Promise<Usua
   
   if (params.tipo) {
     queryParams.append('tipo', params.tipo);
+  }
+  // Se estiver buscando por pacientes (comum), usar endpoint de pacientes
+  if (params.tipo && params.tipo.toLowerCase() === 'comum') {
+    const url = params.nome ? `${PACIENTES_API_URL}?nome=${encodeURIComponent(String(params.nome))}` : PACIENTES_API_URL;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Erro ao buscar pacientes');
+    const data = await res.json();
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      email: p.email || '',
+      tipo_usuario: 'comum'
+    }));
   }
 
   const res = await fetch(`${API_URL}/buscar?${queryParams.toString()}`);

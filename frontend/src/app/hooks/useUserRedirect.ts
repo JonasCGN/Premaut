@@ -8,7 +8,9 @@ export function useUserRedirect() {
   const router = useRouter();
 
   const redirectToUserDashboard = () => {
+    console.log('[useUserRedirect] redirectToUserDashboard called', { isLoggedIn, user });
     if (!isLoggedIn || !user) {
+      console.log('[useUserRedirect] not logged in or missing user -> pushing /home');
       router.push('/home');
       return;
     }

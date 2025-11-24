@@ -7,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedUserTypes?: string[];
+  // alias para facilitar uso em páginas que passavam `requiredUserType`
+  requiredUserType?: string | string[];
   redirectTo?: string;
   requireAuth?: boolean;
 }
@@ -14,6 +16,7 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ 
   children, 
   allowedUserTypes = [], 
+  requiredUserType,
   redirectTo = '/home',
   requireAuth = true
 }: ProtectedRouteProps) {
@@ -21,8 +24,16 @@ export default function ProtectedRoute({
   const router = useRouter();
   const [shouldRender, setShouldRender] = useState(false);
 
+  // Normaliza allowedUserTypes considerando o alias `requiredUserType`
+  const effectiveAllowedUserTypes: string[] = (allowedUserTypes && allowedUserTypes.length > 0)
+    ? allowedUserTypes
+    : (requiredUserType ? ([] as string[]).concat(requiredUserType as any) : []);
+
   useEffect(() => {
-    if (loading) return; // Aguarda carregar o estado de autenticação
+    if (loading) {
+      console.log('[ProtectedRoute] loading auth state...');
+      return; // Aguarda carregar o estado de autenticação
+    }
 
     // Se não requer autenticação, permite acesso
     if (!requireAuth) {
@@ -32,14 +43,24 @@ export default function ProtectedRoute({
 
     // Se requer autenticação mas usuário não está logado
     if (requireAuth && !isLoggedIn) {
+      console.log('[ProtectedRoute] user not logged in -> redirect', { redirectTo });
       router.push(redirectTo);
       return;
     }
 
     // Se tem tipos permitidos especificados, verifica se o usuário tem permissão
-    if (allowedUserTypes.length > 0 && user) {
-      const hasPermission = allowedUserTypes.includes(user.tipo_usuario);
+    // Admin deve ter acesso a todas as rotas protegidas
+    if (user && user.tipo_usuario === 'admin') {
+      console.log('[ProtectedRoute] user is admin -> allow access');
+      setShouldRender(true);
+      return;
+    }
+
+    if (effectiveAllowedUserTypes.length > 0 && user) {
+      console.log('[ProtectedRoute] checking permissions', { effectiveAllowedUserTypes, userType: user.tipo_usuario });
+      const hasPermission = effectiveAllowedUserTypes.includes(user.tipo_usuario);
       if (!hasPermission) {
+        console.log('[ProtectedRoute] permission denied -> redirecting to user dashboard', { userType: user.tipo_usuario });
         // Redireciona para a página apropriada do usuário
         redirectToUserDashboard(user.tipo_usuario);
         return;
@@ -50,6 +71,7 @@ export default function ProtectedRoute({
   }, [isLoggedIn, user, loading, requireAuth, allowedUserTypes, redirectTo, router]);
 
   const redirectToUserDashboard = (userType: string) => {
+    console.log('[ProtectedRoute] redirectToUserDashboard helper', { userType });
     switch (userType) {
       case 'admin':
         router.push('/painel/admin');
