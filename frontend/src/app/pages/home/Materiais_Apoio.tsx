@@ -74,8 +74,7 @@ export const MateriaisApoio: React.FC = () => {
                 </div>
                 <button
                     type="button"
-                    onClick={() => window.location.href = '/pages/apoio/materiais'}
-                    onClick={() => window.location.href = '/pages/apoio/materiais'}
+                    onClick={() => window.location.href = '/apoio/materiais'}
                     style={{
                         borderRadius: 10,
                         border: '3.733px solid #FFF',
@@ -120,7 +119,7 @@ export const MateriaisApoio: React.FC = () => {
                     {materiais.map((item, idx) => (
                         <SwiperSlide key={idx}>
                             <div
-                                className="flex flex-col rounded-lg shadow-md overflow-hidden bg-white"
+                                className="flex flex-col rounded-lg shadow-md overflow-hidden bg-white cursor-pointer hover:shadow-lg transition-shadow duration-200"
                                 style={{
                                     width: '100%',
                                     maxWidth: '250px',
@@ -128,7 +127,11 @@ export const MateriaisApoio: React.FC = () => {
                                     height: '100%',
                                     margin: '0 auto',
                                 }}
-                            >
+                                onClick={() => {
+                                    window.location.href = `/apoio/material/${item.id}`;
+                                }}
+                                title={`Ver detalhes de ${item.nome}`}
+                            >   
                                 <div
                                     style={{
                                         height: '80%',

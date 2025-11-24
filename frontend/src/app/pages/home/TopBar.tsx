@@ -47,7 +47,7 @@ export const TopBar: React.FC = () => {
         style={{ boxShadow: '0 8px 6px rgba(0, 0, 0, 0.3)' }}
       >
         <nav className="flex items-center space-x-4">
-          <a href="#inicio" className={styles.topbarLink}>Inicio</a>
+          <a href="/" className={styles.topbarLink}>Inicio</a>
           <a href="#noticias" className={styles.topbarLink}>Noticias</a>
           <a href="#sobre" className={styles.topbarLink}>Sobre</a>
           {isLoggedIn && canAccessPanel() && (
@@ -73,7 +73,7 @@ export const TopBar: React.FC = () => {
       {/* Auth Button - Desktop */}
       {isLoggedIn ? (
         <div className="hidden md:flex items-center space-x-3">
-          <span className="text-sm text-gray-700">Olá, {user?.nome}</span>
+          {/* <span className="text-sm text-gray-700">Olá, {user?.nome}</span> */}
           <button 
             className="px-3 py-1 rounded bg-white text-white text-sm"
             style={{ 
@@ -117,7 +117,7 @@ export const TopBar: React.FC = () => {
             
             {isLoggedIn ? (
               <div className="border-t pt-3 space-y-2">
-                <p className="text-sm text-gray-600">Olá, {user?.nome}</p>
+                {/* <p className="text-sm text-gray-600">Olá, {user?.nome}</p> */}
                 <button 
                   className="w-full text-left px-3 py-2 rounded bg-white text-sm border border-gray-300"
                   onClick={handleLogout}
