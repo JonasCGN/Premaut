@@ -5,6 +5,8 @@ import {
   enviarCodigoRecuperacao,
   redefinirSenha,
   verificarCodigo,
+  listarUsuarios,
+  buscarUsuarios,
 } from "../controllers/usuariosController";
 
 const router = express.Router();
@@ -22,6 +24,20 @@ router.post("/cadastro", cadastrarUsuario);
  * @access Público
  */
 router.post("/login", loginUsuario);
+
+/**
+ * @route GET /api/usuarios/listar
+ * @desc Listar usuários por tipo
+ * @access Privado (Admin)
+ */
+router.get("/listar", listarUsuarios);
+
+/**
+ * @route GET /api/usuarios/buscar
+ * @desc Buscar usuários por nome e/ou tipo
+ * @access Privado (Admin)
+ */
+router.get("/buscar", buscarUsuarios);
 
 /**
  * @route POST /api/usuarios/esqueci-senha

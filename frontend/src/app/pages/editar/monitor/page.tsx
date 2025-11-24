@@ -5,6 +5,7 @@ import TopBar from "@/app/components/TopBar";
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons'; // Assuming back arrow is here or I'll use a text/svg
 import { useRouter } from 'next/navigation';
+import { buscarMonitorParaEdicao, atualizarMonitor, Monitor } from '../../../services/monitorService';
 
 interface PerfilMonitorEdit {
     nome: string;
@@ -38,15 +39,10 @@ export default function EditScreenMonitor() {
             return;
         }
 
-        // Busca dados para edição
-        fetch(`/api/monitor/editar/${user.id}`, {
-            headers: { "Content-Type": "application/json" },
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("Erro ao carregar dados");
-                return res.json();
-            })
-            .then(data => {
+        const fetchData = async () => {
+            try {
+                // Busca dados para edição
+                const data = await buscarMonitorParaEdicao(user.id);
                 // Formata a data para DD/MM/YYYY se existir
                 const perfil = data.perfil;
                 if (perfil.nascimentoISO) {
@@ -55,12 +51,14 @@ export default function EditScreenMonitor() {
                 }
                 setFormData(perfil);
                 setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
                 setLoading(false);
                 router.push("/perfil/monitor");
-            });
+            }
+        };
+
+        fetchData();
     }, [router]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -102,22 +100,12 @@ export default function EditScreenMonitor() {
         }
 
         try {
-            const res = await fetch(`/api/monitor/editar/${user.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...formData,
-                    nascimento: nascimentoISO,
-                }),
-            });
+            const monitorData: Monitor = {
+                ...formData,
+                nascimento: nascimentoISO,
+            };
 
-            if (!res.ok) {
-                const errData = await res.json();
-                // Mostra o detalhe do erro se existir, senão mostra a mensagem genérica
-                const errorMessage = errData.details || errData.error || "Erro ao atualizar perfil";
-                throw new Error(errorMessage);
-            }
-
+            await atualizarMonitor(user.id, monitorData);
             alert("Perfil atualizado com sucesso!");
             router.push("/perfil/monitor");
         } catch (error: any) {

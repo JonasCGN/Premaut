@@ -34,7 +34,9 @@ export const TopBar: React.FC = () => {
           <a href="#inicio" className={styles.topbarLink}>Inicio</a>
           <a href="#noticias" className={styles.topbarLink}>Noticias</a>
           <a href="#sobre" className={styles.topbarLink}>Sobre</a>
-          <a href="/painel/admin" className={styles.topbarLink}>Painel</a>
+          {/* {typeof window !== "undefined" && localStorage.getItem("token") && ( */}
+            <a href="/painel/admin" className={styles.topbarLink}>Painel</a>
+          {/* // )} */}
         </nav>
       </div>
 

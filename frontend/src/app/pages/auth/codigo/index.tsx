@@ -4,14 +4,13 @@ import React, { useState } from "react";
 import "./styles.css";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { verificarCodigo, VerificarCodigoData } from "../../../services/authService";
 
 const Codigo: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-
   const email = searchParams.get("email") || "";
-
 
   const [codigo, setCodigo] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -35,28 +34,17 @@ const Codigo: React.FC = () => {
     setMensagem("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/usuarios/verificar-codigo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, codigo }),
-      });
+      const data: VerificarCodigoData = { email, codigo };
+      await verificarCodigo(data);
+      
+      setMensagem("Código verificado com sucesso!");
+      setTipoMensagem("sucesso");
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensagem("Código verificado com sucesso!");
-        setTipoMensagem("sucesso");
-
-
-        setTimeout(() => {
-          router.push(`./redefinir_senha?email=${email}&codigo=${codigo}`);
-        }, 1000);
-      } else {
-        setMensagem(data.error || "Código incorreto. Tente novamente.");
-        setTipoMensagem("erro");
-      }
-    } catch (error) {
-      setMensagem("Erro de conexão com o servidor.");
+      setTimeout(() => {
+        router.push(`./redefinir_senha?email=${email}&codigo=${codigo}`);
+      }, 1000);
+    } catch (error: any) {
+      setMensagem(error.message || "Erro de conexão com o servidor.");
       setTipoMensagem("erro");
     } finally {
       setCarregando(false);

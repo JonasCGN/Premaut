@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import TopBar from '@/app/components/TopBar';
 import ImageAssets from '@/app/components/assets/images'; // Renomeei para evitar conflito com o componente Image do Next ou HTML
 import Icons from '@/app/components/assets/icons';
+import { buscarPacientePorId } from '../../../services/pacienteService';
+import { buscarRelatorios } from '../../../services/relatorioService';
 import {
   LineChart,
   Line,
@@ -59,8 +61,6 @@ function ScreenFamillyContent() {
 
   const [stats, setStats] = useState({ incidentes: 0, autocorreceo: 0 });
 
-  const API_URL = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
-  
   // Lógica do ID
   const PACIENTE_ID = idUrl || "5f8d04f6-8864-4c1f-9638-7c7a05996e1d";
 
@@ -71,28 +71,26 @@ function ScreenFamillyContent() {
       try {
         setLoading(true);
 
-        // 1. Buscar dados do Paciente
-        const resPaciente = await fetch(`${API_URL}/api/pacientes/${PACIENTE_ID}`);
-        if (resPaciente.ok) {
-          const dataPaciente = await resPaciente.json();
+        // 1. Buscar dados do Paciente usando o serviço
+        try {
+          const dataPaciente = await buscarPacientePorId(PACIENTE_ID);
           setPaciente(dataPaciente);
-        } else {
-          console.error("Erro ao buscar paciente:", resPaciente.statusText);
+        } catch (err) {
+          console.error("Erro ao buscar paciente:", err);
           setPaciente(null);
         }
 
-        // 2. Buscar Relatórios
-        const resRelatorios = await fetch(`${API_URL}/api/relatorios`);
-        if (resRelatorios.ok) {
-          const dataRelatorios: Relatorio[] = await resRelatorios.json();
+        // 2. Buscar Relatórios usando o serviço
+        try {
+          const dataRelatorios = await buscarRelatorios();
 
           // Filtragem local pelo ID do paciente
-          const meusRelatorios = dataRelatorios.filter(r => String(r.paciente_id) === String(PACIENTE_ID));
+          const meusRelatorios = dataRelatorios.filter((r: any) => String(r.paciente_id) === String(PACIENTE_ID));
           setRelatorios(meusRelatorios);
 
           // 3. Calcular Estatísticas Totais
-          const totalIncidentes = meusRelatorios.filter(r => r.tipo?.toLowerCase().includes('incidente')).length;
-          const totalAutocorreceo = meusRelatorios.filter(r => r.tipo?.toLowerCase().includes('autocorreção') || r.tipo?.toLowerCase().includes('autocorrecao')).length;
+          const totalIncidentes = meusRelatorios.filter((r: any) => r.tipo?.toLowerCase().includes('incidente')).length;
+          const totalAutocorreceo = meusRelatorios.filter((r: any) => r.tipo?.toLowerCase().includes('autocorreção') || r.tipo?.toLowerCase().includes('autocorrecao')).length;
           
           setStats({ incidentes: totalIncidentes, autocorreceo: totalAutocorreceo });
 

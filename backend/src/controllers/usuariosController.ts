@@ -3,6 +3,63 @@ import bcrypt from "bcryptjs";
 import { supabase } from "../services/supabaseClient";
 import nodemailer from "nodemailer";
 
+// Função para listar usuários por tipo (para o painel admin)
+export async function listarUsuarios(req: Request, res: Response) {
+  try {
+    const { tipo } = req.query;
+
+    if (!tipo) {
+      return res.status(400).json({ error: "Tipo de usuário é obrigatório." });
+    }
+
+    const { data: usuarios, error } = await supabase
+      .from("Usuarios")
+      .select("id, nome, email, tipo_usuario")
+      .eq("tipo_usuario", tipo.toString().toLowerCase());
+
+    if (error) {
+      console.error("Erro ao buscar usuários:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários." });
+    }
+
+    return res.status(200).json(usuarios || []);
+  } catch (error) {
+    console.error("Erro ao listar usuários:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
+
+// Função para buscar usuários por nome (para a pesquisa)
+export async function buscarUsuarios(req: Request, res: Response) {
+  try {
+    const { nome, tipo } = req.query;
+
+    let query = supabase
+      .from("Usuarios")
+      .select("id, nome, email, tipo_usuario");
+
+    if (nome) {
+      query = query.ilike("nome", `%${nome}%`);
+    }
+
+    if (tipo) {
+      query = query.eq("tipo_usuario", tipo.toString().toLowerCase());
+    }
+
+    const { data: usuarios, error } = await query;
+
+    if (error) {
+      console.error("Erro ao buscar usuários:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários." });
+    }
+
+    return res.status(200).json(usuarios || []);
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
+
 
 export async function cadastrarUsuario(req: Request, res: Response) {
   try {
