@@ -60,14 +60,13 @@ export const ShowCards: React.FC<ShowCardsProps> = ({ images = [] }) => {
                 </button>
             )}
 
-            <div className="w-full max-w-4xl mx-auto">
+            <div className="w-full max-w-4xl mx-auto p-4">
                 <img
                     src={images[index]}
                     alt={`imagem-${index}`}
-                    className='w-full h-auto rounded-lg shadow-lg'
+                    className='w-full rounded-lg shadow-lg'
                     style={{ 
                         objectFit: 'cover',
-                        maxHeight: '60vh',
                     }}
                 />
             </div>
