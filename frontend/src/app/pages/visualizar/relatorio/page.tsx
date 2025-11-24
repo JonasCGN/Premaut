@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getRelatorioById } from '@/app/services/relatorioService';
-import { getPacienteById } from '@/app/services/pacienteService'; // Importe o serviço de paciente
+import { buscarPacientePorId } from '@/app/services/pacienteService';
 import TopBar from '@/app/components/TopBar';
 import FormSection from '@/app/components/form_relatorio';
 import PatientHeader from '@/app/components/paciente_header';
@@ -12,7 +12,7 @@ import './styles.css';
 
 export default function RelatorioPage() {
   const searchParams = useSearchParams();
-  const id = searchParams.get('id');
+  const id = searchParams.get('id');  
   const [relatorio, setRelatorio] = useState<any>(null);
   const [paciente, setPaciente] = useState<any>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export default function RelatorioPage() {
           if (dataRelatorio && dataRelatorio.paciente_id) {
              try {
                  // Usa o serviço correto que aponta para o backend
-                 const dataPaciente = await getPacienteById(dataRelatorio.paciente_id);
+                 const dataPaciente = await buscarPacientePorId(dataRelatorio.paciente_id);
                  setPaciente(dataPaciente);
              } catch (err) {
                  console.error('Erro ao buscar dados do paciente', err);

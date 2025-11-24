@@ -1,27 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import TopBar from "@/app/components/TopBar";
 import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
+import { listarUsuarios, buscarUsuarios, Usuario } from "../../../services/adminService";
 
 export default function TelaAdmin() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("ALUNO");
-  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Initialize Supabase client
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY as string;
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const filterOptions = [
     "PACIENTE",
-    "MONITOR",
+    "MONITOR", 
     "PROFESSOR",
     "FAMILIAR",
     "ALUNO",
@@ -29,22 +23,28 @@ export default function TelaAdmin() {
   ];
 
   // Function to fetch users based on filter
-  const fetchUsers = async (tipoUsuario: string) => {
+  const fetchUsers = async (tipoUsuario: string, searchText?: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("Usuarios")
-        .select("id, nome")
-        .eq("tipo_usuario", tipoUsuario.toLowerCase());
-
-      if (error) {
-        console.error("Error fetching users:", error);
-        setUsuarios([]);
+      
+      let usuarios: Usuario[];
+      
+      if (searchText?.trim()) {
+        // Se há termo de busca, usar a função de busca
+        usuarios = await buscarUsuarios({
+          nome: searchText,
+          tipo: tipoUsuario.toLowerCase()
+        });
       } else {
-        setUsuarios(data || []);
+        // Senão, apenas listar por tipo
+        usuarios = await listarUsuarios({
+          tipo: tipoUsuario.toLowerCase()
+        });
       }
+      
+      setUsuarios(usuarios);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching users:", error);
       setUsuarios([]);
     } finally {
       setLoading(false);
@@ -53,12 +53,22 @@ export default function TelaAdmin() {
 
   // Fetch users when component mounts or filter changes
   useEffect(() => {
-    fetchUsers(selectedFilter);
+    fetchUsers(selectedFilter, searchTerm);
   }, [selectedFilter]);
+
+  // Handle search
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const target = e.target as HTMLInputElement;
+      setSearchTerm(target.value);
+      fetchUsers(selectedFilter, target.value);
+    }
+  };
 
   const handleFilterChange = (option: string) => {
     setSelectedFilter(option);
     setIsDropdownOpen(false);
+    setSearchTerm(""); // Reset search when changing filter
   };
 
   return (
@@ -76,6 +86,8 @@ export default function TelaAdmin() {
               type="text"
               placeholder="Pesquisa"
               className="flex-1 outline-none bg-transparent text-gray-700 text-lg"
+              onKeyPress={handleSearch}
+              defaultValue={searchTerm}
             />
             <NextImage src={Icons.lupa} alt="Buscar" width={26} height={26} />
           </div>

@@ -6,6 +6,15 @@ import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
 import { FiTrash2 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
+import {
+    buscarProfessorPorId,
+    buscarMonitoresProfessor,
+    buscarMateriaisProfessor,
+    buscarEventosProfessor,
+    buscarMonitoresDisponiveis,
+    vincularMonitor,
+    removerEvento
+} from '../../../services/professorService';
 
 interface ProfessorPerfil {
     id: string;
@@ -76,72 +85,75 @@ export default function ScreenProfessor() {
         if (storedUser) {
             const user = JSON.parse(storedUser);
 
-            // 1. Busca Perfil
-            fetch(`/api/professor/${user.id}`)
-                .then(res => res.json())
-                .then(data => {
+            const fetchData = async () => {
+                try {
+                    // 1. Busca Perfil
+                    const data = await buscarProfessorPorId(user.id);
                     setUsuario(data.perfil);
                     setLoading(false);
-                })
-                .catch(err => {
+
+                    // 2. Busca Monitores Vinculados
+                    fetchLinkedMonitors(user.id);
+
+                    // 3. Busca Materiais
+                    fetchMateriais(user.id);
+
+                    // 4. Busca Eventos
+                    fetchEventos(user.id);
+                } catch (err) {
                     console.error("Erro ao buscar usuário:", err);
                     setLoading(false);
-                });
+                }
+            };
 
-            // 2. Busca Monitores Vinculados
-            fetchLinkedMonitors(user.id);
-
-            // 3. Busca Materiais
-            fetchMateriais(user.id);
-
-            // 4. Busca Eventos
-            fetchEventos(user.id);
+            fetchData();
         } else {
             setLoading(false);
         }
     }, []);
 
-    const fetchLinkedMonitors = (professorId: string) => {
-        fetch(`/api/professor-monitores/${professorId}`)
-            .then(res => res.json())
-            .then(data => setMonitores(data.monitores || []))
-            .catch(err => console.error("Erro ao buscar monitores:", err));
+    const fetchLinkedMonitors = async (professorId: string) => {
+        try {
+            const data = await buscarMonitoresProfessor(professorId);
+            setMonitores(data.monitores || []);
+        } catch (err) {
+            console.error("Erro ao buscar monitores:", err);
+        }
     };
 
-    const fetchMateriais = (professorId: string) => {
-        fetch(`/api/materiais?professorId=${professorId}`)
-            .then(res => res.json())
-            .then(data => setMateriais(data || []))
-            .catch(err => console.error("Erro ao buscar materiais:", err));
+    const fetchMateriais = async (professorId: string) => {
+        try {
+            const data = await buscarMateriaisProfessor(professorId);
+            setMateriais(data || []);
+        } catch (err) {
+            console.error("Erro ao buscar materiais:", err);
+        }
     };
 
-    const fetchEventos = (professorId: string) => {
-        fetch(`/api/eventos?criador=${professorId}`)
-            .then(res => res.json())
-            .then(data => setEventos(data || []))
-            .catch(err => console.error("Erro ao buscar eventos:", err));
+    const fetchEventos = async (professorId: string) => {
+        try {
+            const data = await buscarEventosProfessor(professorId);
+            setEventos(data || []);
+        } catch (err) {
+            console.error("Erro ao buscar eventos:", err);
+        }
     };
 
-    const handleAddMonitorClick = () => {
+    const handleAddMonitorClick = async () => {
         if (!usuario) return;
-        fetch(`/api/professor-monitores/disponiveis/${usuario.id}`)
-            .then(res => res.json())
-            .then(data => {
-                setAvailableMonitors(data.monitores || []);
-                setShowLinkModal(true);
-            })
-            .catch(err => alert("Erro ao buscar monitores disponíveis."));
+        try {
+            const data = await buscarMonitoresDisponiveis(usuario.id);
+            setAvailableMonitors(data.monitores || []);
+            setShowLinkModal(true);
+        } catch (err) {
+            alert("Erro ao buscar monitores disponíveis.");
+        }
     };
 
     const handleLinkMonitor = async () => {
         if (!selectedMonitor || !usuario) return;
         try {
-            const res = await fetch("/api/professor-monitores/vincular", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ professorId: usuario.id, monitorId: selectedMonitor })
-            });
-            if (!res.ok) throw new Error("Erro ao vincular monitor");
+            await vincularMonitor({ professorId: usuario.id, monitorId: selectedMonitor });
             alert("Monitor vinculado com sucesso!");
             setShowLinkModal(false);
             setSelectedMonitor("");
@@ -154,8 +166,7 @@ export default function ScreenProfessor() {
     const handleDeleteEvento = async (eventoId: number) => {
         if (!confirm("Tem certeza que deseja excluir este evento?")) return;
         try {
-            const res = await fetch(`/api/eventos/${eventoId}`, { method: "DELETE" });
-            if (!res.ok) throw new Error("Erro ao excluir evento");
+            await removerEvento(eventoId.toString());
             if (usuario) fetchEventos(usuario.id);
         } catch (error) {
             console.error("Erro ao excluir evento:", error);

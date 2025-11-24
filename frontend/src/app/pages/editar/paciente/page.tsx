@@ -4,21 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TopBar from "@/app/components/TopBar";
 import Image from '@/app/components/assets/images';
-
-interface PacienteEdit {
-    nome: string;
-    genero: string;
-    nascimento: string;
-    nascimentoISO?: string;
-    telefone: string;
-    email: string;
-    nivel_suporte: string;
-    comodidade: string;
-    remedios: string;
-    estereotipia: string;
-    reforco_positivo: string;
-    reforco_negativo: string;
-}
+import { 
+    buscarPacienteParaEdicao, 
+    atualizarPaciente, 
+    PacienteEdit 
+} from '../../../services/pacienteService';
 
 export default function EditScreenPaciente() {
     const [formData, setFormData] = useState<PacienteEdit | null>(null);
@@ -35,13 +25,7 @@ export default function EditScreenPaciente() {
         }
 
         // Busca dados para edição
-        fetch(`/api/pacientes/editar/${id}`, {
-            headers: { "Content-Type": "application/json" },
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("Erro ao carregar dados");
-                return res.json();
-            })
+        buscarPacienteParaEdicao(id)
             .then(data => {
                 const perfil = data.perfil;
                 // Formata data se necessário (assumindo YYYY-MM-DD do banco)
@@ -68,17 +52,7 @@ export default function EditScreenPaciente() {
         if (!formData || !id) return;
 
         try {
-            const res = await fetch(`/api/pacientes/editar/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
-
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.details || errData.error || "Erro ao atualizar");
-            }
-
+            await atualizarPaciente(id, formData);
             alert("Paciente atualizado com sucesso!");
             router.push(`/perfil/paciente?id=${id}`);
         } catch (error: any) {

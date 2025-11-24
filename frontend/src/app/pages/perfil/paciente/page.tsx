@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import TopBar from "@/app/components/TopBar";
 import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
+import { buscarPacientePorId, buscarRelatoriosPaciente } from '../../../services/pacienteService';
 import {
   LineChart,
   Line,
@@ -67,13 +68,14 @@ export default function ScreenPaciente() {
       return;
     }
 
-    // Busca dados do paciente
-    const fetchPaciente = fetch(`/api/pacientes/${id}`).then(res => res.json());
-    // Busca relatórios do paciente
-    const fetchRelatorios = fetch(`/api/relatorios/paciente/${id}`).then(res => res.json());
+    // Busca dados do paciente e relatórios usando os serviços
+    const fetchData = async () => {
+      try {
+        const [pacienteData, relatoriosData] = await Promise.all([
+          buscarPacientePorId(id),
+          buscarRelatoriosPaciente(id)
+        ]);
 
-    Promise.all([fetchPaciente, fetchRelatorios])
-      .then(([pacienteData, relatoriosData]) => {
         if (pacienteData.error) throw new Error(pacienteData.error);
         setPaciente(pacienteData);
 
@@ -83,11 +85,13 @@ export default function ScreenPaciente() {
         }
 
         setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
         setLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, [id]);
 
   const processStatsAndChart = (data: Relatorio[]) => {

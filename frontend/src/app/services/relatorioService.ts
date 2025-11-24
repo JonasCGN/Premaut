@@ -2,6 +2,12 @@ import ConfigApp from "../components/config/config";
 
 const API_URL = `${ConfigApp.URL_API}/api/relatorios`;
 
+export async function buscarRelatorios() {
+  const res = await fetch(`${API_URL}`);
+  if (!res.ok) throw new Error('Erro ao buscar relatórios');
+  return res.json();
+}
+
 export async function buscarMateriais() {
   const res = await fetch(`${API_URL}`);
   if (!res.ok) throw new Error('Erro ao buscar materiais');
