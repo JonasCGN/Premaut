@@ -202,7 +202,7 @@ export default function HomePage() {
       alert('Arquivo criado com sucesso!');
 
       if (professorId) {
-        router.push('/perfil/professor');
+        router.push(`/perfil/professor?id=${professorId}`);
       } else {
         router.back();
       }

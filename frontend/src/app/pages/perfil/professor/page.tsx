@@ -177,9 +177,9 @@ export default function ScreenProfessor() {
         try {
             await removerEvento(eventoId.toString());
             if (usuario) fetchEventos(usuario.id);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao excluir evento:", error);
-            alert("Erro ao excluir evento.");
+            alert(error?.message || 'Erro ao excluir evento.');
         }
     };
 
@@ -194,13 +194,32 @@ export default function ScreenProfessor() {
     if (loading) return <div className="flex justify-center items-center h-screen">Carregando...</div>;
     if (!usuario) return <div className="flex justify-center items-center h-screen">Usuário não encontrado.</div>;
 
-    const dataNascimento = usuario.nascimento
-        ? new Date(usuario.nascimento).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
-        : "Não informado";
+    const formatDateSafe = (value: any, fallback = 'Data desconhecida') => {
+        if (!value) return fallback;
+        try {
+            // tentativa direta
+            const d = new Date(value);
+            if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    const dataCadastro = usuario.criado_em
-        ? new Date(usuario.criado_em).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
-        : "Data desconhecida";
+            // se for número em segundos, converte para ms
+            const n = Number(value);
+            if (!isNaN(n)) {
+                const ms = n < 1e12 ? n * 1000 : n; // heurística: se for menor que 1e12 provavelmente está em segundos
+                const d2 = new Date(ms);
+                if (!isNaN(d2.getTime())) return d2.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+
+            // última tentativa: substituir espaço por T (caso venha sem separador de timezone)
+            const isoTry = new Date(String(value).replace(' ', 'T'));
+            if (!isNaN(isoTry.getTime())) return isoTry.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (e) {
+            console.warn('formatDateSafe error', e, value);
+        }
+        return fallback;
+    };
+
+    const dataNascimento = usuario.nascimento ? formatDateSafe(usuario.nascimento, 'Não informado') : 'Não informado';
+    const dataCadastro = usuario.criado_em ? formatDateSafe(usuario.criado_em, 'Data desconhecida') : 'Data desconhecida';
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -286,7 +305,7 @@ export default function ScreenProfessor() {
                     {/* Coluna 1: Materiais */}
                     <div className="flex flex-col items-start gap-4">
                         <button
-                            onClick={() => router.push(`/cadastrar/upload?professorId=${usuario.id}`)}
+                            onClick={() => router.push(`/cadastrar/material?professorId=${usuario.id}`)}
                             className="flex items-center gap-2 bg-[#FAE0D9] text-[#4A4A4A] px-5 py-3 rounded-[15.82px] font-medium shadow-md hover:bg-[#FFF1ED] transition"
                         >
                             <img src={Icons.lapisCinza} alt="Adicionar" className="w-5 h-5" />
@@ -382,12 +401,12 @@ export default function ScreenProfessor() {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => handleDeleteEvento(event.id)}
-                                                className="p-1 hover:bg-red-100 rounded transition opacity-60 hover:opacity-100"
-                                                title="Excluir evento"
-                                            >
-                                                <FiTrash2 size={16} color="#ef4444" />
-                                            </button>
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteEvento(event.id); }}
+                                                    className="p-1 hover:bg-red-100 rounded transition opacity-60 hover:opacity-100"
+                                                    title="Excluir evento"
+                                                >
+                                                    <FiTrash2 size={16} color="#ef4444" />
+                                                </button>
                                         </div>
                                     ))
                                 )}

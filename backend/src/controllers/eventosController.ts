@@ -60,13 +60,28 @@ export const createEvento = async (req: Request, res: Response) => {
   try {
     const { titulo, data, localizacao, descricao, criador } = req.body;
 
+    // Log do corpo recebido para facilitar debugging
+    console.info('[createEvento] req.body:', { titulo, data, localizacao, descricao, criador });
+
+    // Validações básicas
+    if (!titulo) return res.status(400).json({ error: 'Campo "titulo" é obrigatório' });
+
+    // Normaliza data: aceita string YYYY-MM-DD ou ISO. Exige data não vazia.
+    let eventoData: string | null = null;
+    if (data && String(data).trim() !== '') {
+      // se for string, tenta converter para ISO (supabase aceita strings ISO)
+      eventoData = data;
+    } else {
+      return res.status(400).json({ error: 'Campo "data" é obrigatório' });
+    }
+
     // 1. Cria o evento na tabela eventos
     const { data: evento, error: eventoError } = await supabase
       .from('eventos')
       .insert([
         {
           titulo,
-          data,
+          data: eventoData,
           localizacao,
           descricao,
         },
@@ -75,29 +90,41 @@ export const createEvento = async (req: Request, res: Response) => {
       .single();
 
     if (eventoError) {
-      throw eventoError;
+      console.error('[createEvento] supabase insert error:', eventoError);
+      return res.status(500).json({ error: eventoError.message || 'Erro ao inserir evento' });
     }
 
-    // 2. Se tiver criador (professorId), cria o vínculo na tabela Professor_Eventos
-    if (criador && evento) {
-      const { error: linkError } = await supabase
-        .from('Professor_Eventos')
-        .insert([
-          {
-            professor_id: criador,
-            evento_id: evento.id,
-          },
-        ]);
+    // 2. Se tiver criador numérico (professorId), cria o vínculo na tabela Professor_Eventos
+    // Só cria vínculo se o criador for um UUID (string) não vazio
+    if (criador !== undefined && criador !== null && String(criador).trim() !== '' && evento) {
+      const criadorStr = String(criador).trim();
+      // checagem simples de UUID (v4-like) — não é absoluta, mas evita números/strings vazias
+      const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+      if (uuidRegex.test(criadorStr)) {
+        const { error: linkError } = await supabase
+          .from('Professor_Eventos')
+          .insert([
+            {
+              professor_id: criadorStr,
+              evento_id: evento.id,
+            },
+          ]);
 
-      if (linkError) {
-        console.error('Erro ao vincular evento ao professor:', linkError);
+        if (linkError) {
+          console.error('[createEvento] Erro ao vincular evento ao professor:', linkError);
+          // não falhar a criação do evento por falha no link
+        }
+      } else {
+        console.warn('[createEvento] valor de criador não parece ser UUID, ignorando link:', criadorStr);
       }
     }
 
-    res.status(201).json(evento);
+    return res.status(201).json(evento);
   } catch (error) {
-    console.error('Erro ao criar evento:', error);
-    res.status(500).json({ error: 'Erro ao criar evento' });
+    console.error('[createEvento] exceção:', error);
+    // tenta enviar mensagem detalhada quando disponível
+    const msg = (error as any)?.message || 'Erro ao criar evento';
+    return res.status(500).json({ error: msg });
   }
 };
 
@@ -120,13 +147,35 @@ export const updateEvento = async (req: Request, res: Response) => {
 // Deletar evento
 export const removeEvento = async (req: Request, res: Response) => {
   const { id } = req.params;
+  try {
+    const eventoId = Number(id);
+    if (isNaN(eventoId)) return res.status(400).json({ error: 'ID inválido' });
 
-  const { error, count } = await supabase
-    .from('eventos')
-    .delete({ count: 'exact' })
-    .eq('id', Number(id));
+    // Primeiro remove vínculos na tabela Professor_Eventos para evitar erro de FK
+    const { error: linkDelErr } = await supabase
+      .from('Professor_Eventos')
+      .delete()
+      .eq('evento_id', eventoId);
 
-  if (error) return res.status(500).json({ error: error.message });
-  if (count === 0) return res.status(404).json({ error: 'Evento não encontrado' });
-  return res.status(204).send();
+    if (linkDelErr) {
+      console.error('[removeEvento] erro ao deletar links Professor_Eventos:', linkDelErr);
+      // não falhar imediatamente — tentaremos deletar o evento mesmo assim
+    }
+
+    const { error, count } = await supabase
+      .from('eventos')
+      .delete({ count: 'exact' })
+      .eq('id', eventoId);
+
+    if (error) {
+      console.error('[removeEvento] erro ao deletar evento:', error);
+      return res.status(500).json({ error: error.message || 'Erro ao deletar evento' });
+    }
+
+    if (count === 0) return res.status(404).json({ error: 'Evento não encontrado' });
+    return res.status(204).send();
+  } catch (err: any) {
+    console.error('[removeEvento] exceção inesperada:', err);
+    return res.status(500).json({ error: err.message || 'Erro interno ao remover evento' });
+  }
 };
