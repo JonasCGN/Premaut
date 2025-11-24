@@ -84,10 +84,10 @@ export async function cadastrarUsuario(req: Request, res: Response) {
       return res.status(400).json({ error: "E-mail já cadastrado." });
     }
 
-
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-    const { data, error } = await supabase.from("Usuarios").insert([
+    // Cria o usuário na tabela personalizada
+    const { data: userData, error: insertError } = await supabase.from("Usuarios").insert([
       {
         nome,
         genero,
@@ -97,14 +97,22 @@ export async function cadastrarUsuario(req: Request, res: Response) {
         nascimento,
         tipo_usuario: "comum",
       },
-    ]);
+    ]).select().single();
 
-    if (error) {
-      console.error("Erro no insert do Supabase:", error);
-      return res.status(400).json({ error: error.message });
+    if (insertError) {
+      console.error("Erro no insert do Supabase:", insertError);
+      return res.status(400).json({ error: insertError.message });
     }
 
-    return res.status(201).json({ message: "Usuário cadastrado com sucesso!", data });
+    return res.status(201).json({
+      message: "Usuário cadastrado com sucesso!",
+      usuario: {
+        id: userData.id, // UUID da tabela Usuarios
+        nome: userData.nome,
+        email: userData.email,
+        tipo_usuario: userData.tipo_usuario,
+      },
+    });
   } catch (error) {
     console.error("Erro ao cadastrar usuário:", error);
     return res.status(500).json({ error: "Erro interno no servidor." });
@@ -119,14 +127,15 @@ export async function loginUsuario(req: Request, res: Response) {
       return res.status(400).json({ error: "E-mail e senha são obrigatórios." });
     }
 
-    const { data: usuario, error } = await supabase
+    // Primeiro, busca o usuário no banco para verificar se existe
+    const { data: usuario, error: buscarError } = await supabase
       .from("Usuarios")
       .select("*")
       .eq("email", email)
       .maybeSingle();
 
-    if (error) {
-      console.error("Erro ao buscar usuário:", error);
+    if (buscarError) {
+      console.error("Erro ao buscar usuário:", buscarError);
       return res.status(500).json({ error: "Erro ao buscar usuário." });
     }
 
@@ -134,16 +143,18 @@ export async function loginUsuario(req: Request, res: Response) {
       return res.status(400).json({ error: "Usuário não encontrado." });
     }
 
+    // Verifica a senha
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaValida) {
       return res.status(401).json({ error: "Senha incorreta." });
     }
 
+    // Login realizado com sucesso - retorna apenas dados da tabela
     return res.status(200).json({
       message: "Login realizado com sucesso!",
       usuario: {
-        id: usuario.id,
+        id: usuario.id, // UUID da tabela Usuarios
         nome: usuario.nome,
         email: usuario.email,
         tipo_usuario: usuario.tipo_usuario,
@@ -176,9 +187,7 @@ export const enviarCodigoRecuperacao = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Usuário não encontrado." });
     }
 
-
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-
 
     const { error: insertErr } = await supabase
       .from("RecuperacaoSenha")
@@ -271,6 +280,45 @@ export const verificarCodigo = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Erro interno no servidor.", detalhes: err.message });
   }
 };
+
+export async function validarUsuario(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      return res.status(401).json({ error: "ID do usuário não fornecido." });
+    }
+
+    // Busca o usuário pelo ID
+    const { data: usuario, error } = await supabase
+      .from("Usuarios")
+      .select("id, nome, email, tipo_usuario")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao validar usuário:", error);
+      return res.status(500).json({ error: "Erro ao validar usuário." });
+    }
+
+    if (!usuario) {
+      return res.status(401).json({ error: "Usuário não encontrado." });
+    }
+
+    return res.status(200).json({
+      valid: true,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        tipo_usuario: usuario.tipo_usuario,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao validar usuário:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
 
 export async function redefinirSenha(req: Request, res: Response) {
   try {

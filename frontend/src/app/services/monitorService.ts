@@ -1,4 +1,5 @@
 import ConfigApp from "../components/config/config";
+import { getAuthHeaders } from "../utils/auth";
 
 const API_URL = ConfigApp.URL_API;
 
@@ -23,10 +24,7 @@ export interface VincularPacienteData {
 // Buscar perfil do monitor
 export async function buscarPerfilMonitor(id: string) {
   const res = await fetch(`${API_URL}/api/monitor/perfil/${id}`, {
-    headers: {
-      "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`,
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Erro ao buscar perfil do monitor');
   return res.json();
@@ -35,10 +33,7 @@ export async function buscarPerfilMonitor(id: string) {
 // Buscar monitor para edição
 export async function buscarMonitorParaEdicao(id: string) {
   const res = await fetch(`${API_URL}/api/monitor/editar/${id}`, {
-    headers: {
-      "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`,
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Erro ao buscar dados do monitor');
   return res.json();
@@ -48,10 +43,7 @@ export async function buscarMonitorParaEdicao(id: string) {
 export async function atualizarMonitor(id: string, data: Monitor) {
   const res = await fetch(`${API_URL}/api/monitor/editar/${id}`, {
     method: "PUT",
-    headers: {
-      "Authorization": `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`,
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
