@@ -5,17 +5,25 @@ import uploadRouter from './routes/uploadRoutes';
 import relatorioRoutes from './routes/relatorioRoutes';
 import materiaisRoutes from './routes/materiaisRoutes';
 import usuariosRoutes from "./routes/usuarios";
+import monitorRouter from "./routes/monitorRouter";
+import pacientesRoutes from './routes/pacientesRoutes';
+import monitorRoutes from "./routes/monitorRouter";
 import professorRoutes from "./routes/professorRoutes";
 import professorMonitoresRoutes from "./routes/professorMonitoresRoutes";
+import eventosRoutes from "./routes/eventosRoutes";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/api', routes);
+app.use("/api/monitor", monitorRouter);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/upload', uploadRouter);
 app.use('/api/materiais', materiaisRoutes);
+app.use('/api/eventos', eventosRoutes);
 app.use("/api/usuarios", usuariosRoutes);
+app.use('/api/pacientes', pacientesRoutes);
+app.use("/api/monitor", monitorRoutes);
 app.use("/api/professor", professorRoutes);
 app.use("/api/professor-monitores", professorMonitoresRoutes);
 
