@@ -34,19 +34,11 @@ const Codigo: React.FC = () => {
     setMensagem("");
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
-      const response = await fetch(`${API_BASE}/api/usuarios/verificar-codigo`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, codigo }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensagem("Código verificado com sucesso!");
-        setTipoMensagem("sucesso");
-
+      const data: VerificarCodigoData = { email, codigo };
+      await verificarCodigo(data);
+      
+      setMensagem("Código verificado com sucesso!");
+      setTipoMensagem("sucesso");
 
       setTimeout(() => {
         router.push(`./redefinir_senha?email=${email}&codigo=${codigo}`);
