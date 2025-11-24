@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { login, LoginData } from "../../../services/authService";
+import { useAuth } from "../../../contexts/AuthContext";
 import './styles.css';
 
 const Login: React.FC = () => {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -21,6 +23,11 @@ const Login: React.FC = () => {
     try {
       const data: LoginData = { email, senha };
       const result = await login(data);
+
+      // Atualiza o context de autenticação
+      if (result.usuario) {
+        authLogin(result.usuario.id, result.usuario);
+      }
 
       setMensagem(result.message);
       setTimeout(() => router.push("/home"), 1000);
