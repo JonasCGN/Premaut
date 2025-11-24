@@ -17,6 +17,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { toISODate, formatDateShort } from '@/app/utils/formatDate';
 
 interface ChartDataPoint {
   date: string;
@@ -95,11 +96,11 @@ export default function HomePage() {
     };
 
     relatorios.forEach((r: any) => {
-      const dateIso = new Date(r.created_at).toISOString().split('T')[0];
+      const dateIso = toISODate(r.created_at) || toISODate((r as any).createdAt) || '';
       if (!grouped[dateIso]) {
         grouped[dateIso] = {
           date: dateIso,
-          displayDate: new Date(r.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          displayDate: formatDateShort(r.created_at || (r as any).createdAt),
           incidentes: 0,
           autocorrecao: 0,
         };

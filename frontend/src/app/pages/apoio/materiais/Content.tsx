@@ -5,7 +5,7 @@ import React from 'react';
 
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
-import { Material } from '@/types/material';
+import { Material } from '@/app/types/material';
 import { buscarMateriais } from '@/app/services/materiaisService';
 
 export const MateriaisApoio: React.FC = () => {
