@@ -33,9 +33,13 @@ export const MaterialDetalhe: React.FC = () => {
     return (
         <div className="flex flex-col min-h-screen p-4">
             <div>
-                <a href="/apoio/materiais">
+                <button
+                    type="button"
+                    onClick={() => window.history.back()}
+                    aria-label="Voltar"
+                >
                     <img src={Icons.mdi_arrow_back} alt="Voltar" className="w-12 h-12" />
-                </a>
+                </button>
             </div>
             <div
                 className="flex flex-row p-4 m-8 gap-4"
