@@ -100,12 +100,28 @@ export async function vincularMonitor(data: VincularMonitorData) {
 // Remover evento
 export async function removerEvento(eventoId: string) {
   const res = await fetch(`${API_URL}/api/eventos/${eventoId}`, { 
-    method: "DELETE" 
+    method: 'DELETE'
   });
-  
+
+  // Se não ok, tente ler o corpo JSON com a mensagem de erro
   if (!res.ok) {
-    throw new Error("Erro ao remover evento");
+    let errMsg = 'Erro ao remover evento';
+    try {
+      const errData = await res.json();
+      if (errData && errData.error) errMsg = errData.error;
+    } catch (e) {
+      // sem body JSON
+    }
+    throw new Error(errMsg);
   }
 
-  return res.json();
+  // DELETE pode retornar 204 No Content
+  if (res.status === 204) return;
+
+  // se retornar JSON (por exemplo, info), parse e retorne
+  try {
+    return await res.json();
+  } catch (e) {
+    return;
+  }
 }

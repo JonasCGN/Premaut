@@ -177,9 +177,9 @@ export default function ScreenProfessor() {
         try {
             await removerEvento(eventoId.toString());
             if (usuario) fetchEventos(usuario.id);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao excluir evento:", error);
-            alert("Erro ao excluir evento.");
+            alert(error?.message || 'Erro ao excluir evento.');
         }
     };
 
@@ -305,7 +305,7 @@ export default function ScreenProfessor() {
                     {/* Coluna 1: Materiais */}
                     <div className="flex flex-col items-start gap-4">
                         <button
-                            onClick={() => router.push(`/cadastrar/upload?professorId=${usuario.id}`)}
+                            onClick={() => router.push(`/cadastrar/material?professorId=${usuario.id}`)}
                             className="flex items-center gap-2 bg-[#FAE0D9] text-[#4A4A4A] px-5 py-3 rounded-[15.82px] font-medium shadow-md hover:bg-[#FFF1ED] transition"
                         >
                             <img src={Icons.lapisCinza} alt="Adicionar" className="w-5 h-5" />
@@ -401,12 +401,12 @@ export default function ScreenProfessor() {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => handleDeleteEvento(event.id)}
-                                                className="p-1 hover:bg-red-100 rounded transition opacity-60 hover:opacity-100"
-                                                title="Excluir evento"
-                                            >
-                                                <FiTrash2 size={16} color="#ef4444" />
-                                            </button>
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteEvento(event.id); }}
+                                                    className="p-1 hover:bg-red-100 rounded transition opacity-60 hover:opacity-100"
+                                                    title="Excluir evento"
+                                                >
+                                                    <FiTrash2 size={16} color="#ef4444" />
+                                                </button>
                                         </div>
                                     ))
                                 )}

@@ -26,28 +26,33 @@ export default function CadastroEvento() {
         e.preventDefault();
 
         try {
+            const body: any = { titulo, data, localizacao, descricao };
+            // Envia campo 'criador' (UUID) quando houver professorId
+            if (professorId) {
+                body.criador = professorId;
+            }
+
             const response = await fetch(`${API_BASE}/api/eventos`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    titulo,
-                    data,
-                    localizacao,
-                    descricao,
-                    criador: professorId || criador // Usa o ID do professor se disponível, senão o texto digitado (fallback)
-                }),
+                body: JSON.stringify(body),
             });
 
             if (!response.ok) {
-                throw new Error('Erro ao criar evento');
+                let errMsg = 'Erro ao criar evento';
+                try {
+                    const err = await response.json();
+                    if (err && err.error) errMsg = err.error;
+                } catch (e) {}
+                throw new Error(errMsg);
             }
 
             alert('Evento criado com sucesso!');
 
             if (professorId) {
-                router.push('/perfil/professor');
+                router.push(`/perfil/professor?id=${professorId}`);
             } else {
                 router.back();
             }
