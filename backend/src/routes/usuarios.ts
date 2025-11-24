@@ -7,6 +7,7 @@ import {
   verificarCodigo,
   listarUsuarios,
   buscarUsuarios,
+  validarUsuario,
 } from "../controllers/usuariosController";
 
 const router = express.Router();
@@ -53,6 +54,13 @@ router.post("/esqueci-senha", enviarCodigoRecuperacao);
  * @access Público
  */
 router.post("/redefinir-senha", redefinirSenha);
+
+/**
+ * @route POST /api/usuarios/validar
+ * @desc Validar usuário pelo ID
+ * @access Privado
+ */
+router.post("/validar", validarUsuario);
 
 router.post("/verificar-codigo", verificarCodigo);
 /**

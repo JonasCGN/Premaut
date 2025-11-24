@@ -83,6 +83,7 @@ const Redefinir_senha: React.FC = () => {
                 placeholder="Digite sua nova senha"
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
+                required
               />
             </div>
 
@@ -94,6 +95,7 @@ const Redefinir_senha: React.FC = () => {
                 placeholder="Confirme sua nova senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
+                required
               />
             </div>
 
