@@ -6,16 +6,8 @@ import {
   redefinirSenha,
   verificarCodigo,
 } from "../controllers/usuariosController";
-import { autenticar } from "../middlewares/autenticar";
 
 const router = express.Router();
-
-router.get("/perfil", autenticar, async (req, res) => {
-  res.json({
-    mensagem: "Rota protegida!",
-    usuario: req.user, 
-  });
-});
 
 /**
  * @route POST /api/usuarios/cadastro
