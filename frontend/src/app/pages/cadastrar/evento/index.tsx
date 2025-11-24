@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import "./styles.css";
@@ -20,11 +20,13 @@ export default function CadastroEvento() {
     const [descricao, setDescricao] = useState("");
     const [titulo, setTitulo] = useState("");
 
+    const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         try {
-            const response = await fetch('http://localhost:3001/api/eventos', {
+            const response = await fetch(`${API_BASE}/api/eventos`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

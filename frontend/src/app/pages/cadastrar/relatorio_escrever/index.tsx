@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import FormSection from '@/app/components/form_relatorio';
 import TypeDropdown from '@/app/components/type_dropdown';
 import PatientHeader from '@/app/components/paciente_header';
@@ -23,12 +23,14 @@ export default function HomePage() {
 
   const tiposValidos = ['incidente', 'autocorreção'];
 
+  const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
+
   useEffect(() => {
     if (!pacienteId) return;
 
     const loadPaciente = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/pacientes/${pacienteId}`);
+        const res = await fetch(`${API_BASE}/api/pacientes/${pacienteId}`);
         if (!res.ok) throw new Error("Erro ao buscar paciente");
 
         const data = await res.json();
@@ -57,7 +59,7 @@ export default function HomePage() {
     console.log("Payload enviado:", payload);
 
     try {
-      let url = "http://localhost:3001/api/relatorios";
+      let url = `${API_BASE}/api/relatorios`;
       let method = "POST";
 
       const res = await fetch(url, {

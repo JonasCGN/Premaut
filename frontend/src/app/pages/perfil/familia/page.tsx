@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import ImageAssets from '@/app/components/assets/images'; // Renomeei para evitar conflito com o componente Image do Next ou HTML
 import Icons from '@/app/components/assets/icons';
 import {

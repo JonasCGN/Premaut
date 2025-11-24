@@ -1,9 +1,25 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useRef, useEffect } from 'react';
 import styles from '@/app/styles/topbar.module.css';
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
 
 export const TopBar: React.FC = () => {
+  const [painelOpen, setPainelOpen] = useState(false);
+  const painelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleDoc(e: MouseEvent) {
+      if (!painelRef.current) return;
+      if (e.target instanceof Node && !painelRef.current.contains(e.target)) {
+        setPainelOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleDoc);
+    return () => document.removeEventListener('mousedown', handleDoc);
+  }, []);
+
   return (
     <header
       className="sticky top-0 z-40 flex items-center justify-between h-16 px-6"
@@ -27,11 +43,48 @@ export const TopBar: React.FC = () => {
           }
         }
       >
-        <nav className="hidden sm:flex items-center space-x-4">
+        <nav className="hidden sm:flex items-center space-x-4" style={{ position: 'relative' }}>
           <a href="" className={styles.topbarLink}>Inicio</a>
           <a href="#noticias" className={styles.topbarLink}>Noticias</a>
           <a href="#sobre" className={styles.topbarLink}>Sobre</a>
-            <a href="/painel" className={styles.topbarLink}>Painel</a>
+
+          <div ref={painelRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className={styles.topbarLink}
+              onClick={() => setPainelOpen((v) => !v)}
+              aria-expanded={painelOpen}
+              aria-haspopup="menu"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+            >
+              Painel ▾
+            </button>
+
+            {painelOpen && (
+              <div
+                role="menu"
+                aria-label="Opções do Painel"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  minWidth: 160,
+                  background: '#fff',
+                  boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+                  borderRadius: 8,
+                  padding: '6px 0',
+                  zIndex: 120,
+                }}
+              >
+                <a href="/painel/admin" role="menuitem" className={styles.topbarLink} style={{ display: 'block', padding: '8px 12px' }}>
+                  Painel do Admin
+                </a>
+                <a href="/painel/professor" role="menuitem" className={styles.topbarLink} style={{ display: 'block', padding: '8px 12px' }}>
+                  Painel do Professor
+                </a>
+              </div>
+            )}
+          </div>
         </nav>
       </div>
       <button 

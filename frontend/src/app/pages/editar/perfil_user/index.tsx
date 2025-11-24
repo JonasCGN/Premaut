@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import "./styles.css";
 import Icons from "@/app/components/assets/icons";
 import LogoCompleta from '@/app/components/logo_completa';

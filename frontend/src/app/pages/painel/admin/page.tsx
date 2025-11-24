@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
+import { useRouter } from 'next/navigation';
 import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
 
 export default function TelaAdmin() {
+  const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("ALUNO");
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -166,7 +168,20 @@ export default function TelaAdmin() {
                   </p>
 
                   {/* Botão */}
-                  <button className="bg-[#009B9E] text-white rounded-full px-6 py-3 text-base font-semibold shadow-md hover:bg-[#007f80] transition">
+                  <button
+                    className="bg-[#009B9E] text-white rounded-full px-6 py-3 text-base font-semibold shadow-md hover:bg-[#007f80] transition"
+                    onClick={() => {
+                      // Direciona para o tipo de perfil correspondente ao filtro atual
+                      const tipo = String(selectedFilter).toUpperCase();
+                      let path = '/perfil/professor';
+                      if (tipo === 'PACIENTE' || tipo === 'ALUNO') path = '/perfil/paciente';
+                      else if (tipo === 'MONITOR') path = '/perfil/monitor';
+                      else if (tipo === 'PROFESSOR') path = '/perfil/professor';
+                      else if (tipo === 'FAMILIAR') path = '/perfil/familia';
+
+                      router.push(`${path}?id=${user.id}`);
+                    }}
+                  >
                     Verificar perfil
                   </button>
                 </div>
