@@ -68,9 +68,8 @@ function ScreenFamillyContent() {
     async function fetchData() {
       if (!PACIENTE_ID) return;
 
+      setLoading(true);
       try {
-        setLoading(true);
-
         // 1. Buscar dados do Paciente usando o serviço
         try {
           const dataPaciente = await buscarPacientePorId(PACIENTE_ID);
@@ -85,50 +84,45 @@ function ScreenFamillyContent() {
           const dataRelatorios = await buscarRelatorios();
 
           // Filtragem local pelo ID do paciente
-          const meusRelatorios = dataRelatorios.filter((r: any) => String(r.paciente_id) === String(PACIENTE_ID));
+          const meusRelatorios = (dataRelatorios || []).filter((r: any) => String(r.paciente_id) === String(PACIENTE_ID));
           setRelatorios(meusRelatorios);
 
           // 3. Calcular Estatísticas Totais
           const totalIncidentes = meusRelatorios.filter((r: any) => r.tipo?.toLowerCase().includes('incidente')).length;
-          const totalAutocorreceo = meusRelatorios.filter((r: any) => r.tipo?.toLowerCase().includes('autocorreção') || r.tipo?.toLowerCase().includes('autocorrecao')).length;
-          
+          const totalAutocorreceo = meusRelatorios.filter((r: any) => {
+            const t = String(r.tipo || '').toLowerCase();
+            return t.includes('autocorreção') || t.includes('autocorrecao');
+          }).length;
           setStats({ incidentes: totalIncidentes, autocorreceo: totalAutocorreceo });
 
           // 4. Processar Dados para o Gráfico (Agrupar por Data)
           const groupedData: Record<string, ChartDataPoint> = {};
 
-          meusRelatorios.forEach(relatorio => {
-            // Extrai apenas a data YYYY-MM-DD
-            const dataIso = new Date(relatorio.created_at).toISOString().split('T')[0];
-            
+          meusRelatorios.forEach((relatorio: any) => {
+            const created = relatorio.created_at || relatorio.createdAt || relatorio.createdAt;
+            const dataIso = new Date(created).toISOString().split('T')[0];
+
             if (!groupedData[dataIso]) {
               groupedData[dataIso] = {
                 date: dataIso,
-                displayDate: new Date(relatorio.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                displayDate: new Date(created).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 incidentes: 0,
                 autocorrecao: 0
               };
             }
 
-            const tipo = relatorio.tipo?.toLowerCase() || '';
-            if (tipo.includes('incidente')) {
-              groupedData[dataIso].incidentes += 1;
-            } else if (tipo.includes('autocorreção') || tipo.includes('autocorrecao')) {
-              groupedData[dataIso].autocorrecao += 1;
-            }
+            const tipo = String(relatorio.tipo || '').toLowerCase();
+            if (tipo.includes('incidente')) groupedData[dataIso].incidentes += 1;
+            if (tipo.includes('autocorreção') || tipo.includes('autocorrecao')) groupedData[dataIso].autocorrecao += 1;
           });
 
-          // Transformar objeto em array e ordenar por data
-          const chartArray = Object.values(groupedData).sort((a, b) => 
-            new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
-
+          const chartArray = Object.values(groupedData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           setChartData(chartArray);
-
-        } else {
-          console.error("Erro ao buscar relatórios:", resRelatorios.statusText);
+        } catch (err) {
+          console.error('Erro ao buscar relatórios:', err);
+          setRelatorios([]);
+          setChartData([]);
         }
-
       } catch (error) {
         console.error("Erro de conexão com o backend:", error);
       } finally {
@@ -137,7 +131,7 @@ function ScreenFamillyContent() {
     }
 
     fetchData();
-  }, [API_URL, PACIENTE_ID]);
+  }, [PACIENTE_ID]);
 
   // Funções utilitárias de formatação
   const formatarData = (dataISO: string) => {
