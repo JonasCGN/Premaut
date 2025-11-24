@@ -1,5 +1,5 @@
 import React from 'react';
-import TopBar from '@/app/components/TopBar';
+import TopBar from '../../../components/TopBarComponent';
 import MateriaisApoio from './Content';
 
 export default function HomePage() {

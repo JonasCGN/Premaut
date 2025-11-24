@@ -1,10 +1,11 @@
-'use client';
+ 'use client';
 
 import React, { useState, useEffect } from 'react';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 import {
     buscarPerfilMonitor,
     buscarPacientesMonitor,
@@ -43,6 +44,8 @@ export default function ScreenMonitor() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { isLoggedIn, user, loading: authLoading } = useAuth();
 
   // Estado para o menu "Adicionar"
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -53,35 +56,43 @@ export default function ScreenMonitor() {
   const [selectedPatient, setSelectedPatient] = useState("");
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      router.push("/auth/login");
+    console.log('[perfil/monitor] auth state', { authLoading, isLoggedIn, user });
+    if (authLoading) return;
+
+    if (!isLoggedIn || !user) {
+      console.log('[perfil/monitor] no auth -> redirect to /auth/login');
+      router.push('/auth/login');
       return;
     }
 
-    const user = JSON.parse(userData);
-    if (user.tipo_usuario !== "monitor") {
-      alert("Acesso negado.");
-      router.push("/auth/login");
+    // Permite que monitores e administradores acessem a página de perfil do monitor
+    if (user.tipo_usuario !== 'monitor' && user.tipo_usuario !== 'admin') {
+      console.log('[perfil/monitor] acesso negado - tipo_usuario:', user.tipo_usuario);
+      alert('Acesso negado.');
+      router.push('/auth/login');
       return;
     }
+
+    const idFromQuery = searchParams?.get('id');
+    const targetId = idFromQuery || user.id;
 
     const fetchData = async () => {
+      console.log('[perfil/monitor] fetchData start for targetId:', targetId);
       try {
         // 1. Busca Perfil
-        const data = await buscarPerfilMonitor(user.id);
+        const data = await buscarPerfilMonitor(targetId);
         setPerfil(data.perfil);
 
         // 2. Busca Alunos Vinculados
-        await fetchLinkedStudents(user.id);
+        await fetchLinkedStudents(targetId);
       } catch (err) {
         console.error(err);
-        router.push("/auth/login");
+        router.push('/auth/login');
       }
     };
 
     fetchData();
-  }, [router]);
+  }, [authLoading, isLoggedIn, user, searchParams, router]);
 
   const fetchLinkedStudents = async (monitorId: string) => {
     try {
@@ -95,7 +106,10 @@ export default function ScreenMonitor() {
   };
 
   const handleEditClick = () => {
-    router.push("/editar/monitor");
+    const idFromQuery = searchParams?.get('id');
+    const targetId = idFromQuery || user?.id;
+    console.log('[perfil/monitor] handleEditClick -> navigating to editar/monitor with id:', targetId);
+    router.push(`/editar/monitor?id=${targetId}`);
   };
 
   const handleAddClick = () => {
@@ -108,38 +122,43 @@ export default function ScreenMonitor() {
 
   const handleVincularClick = async () => {
     setShowAddMenu(false);
-    const userData = localStorage.getItem("user");
-    if (!userData) return;
-    const user = JSON.parse(userData);
+    const monitorId = user?.id;
+    if (!monitorId) {
+      console.log('[perfil/monitor] handleVincularClick: missing user id');
+      return;
+    }
 
     try {
       // Busca pacientes disponíveis
-      const data = await buscarPacientesDisponiveis(user.id);
+      const data = await buscarPacientesDisponiveis(monitorId);
       setAvailablePatients(data.pacientes || []);
       setShowLinkModal(true);
     } catch (err) {
+      console.error('[perfil/monitor] erro ao buscar pacientes disponiveis', err);
       alert("Erro ao buscar pacientes disponíveis.");
     }
   };
 
   const handleSaveLink = async () => {
     if (!selectedPatient) return;
-
-    const userData = localStorage.getItem("user");
-    if (!userData) return;
-    const user = JSON.parse(userData);
+    const monitorId = user?.id;
+    if (!monitorId) {
+      console.log('[perfil/monitor] handleSaveLink: missing user id');
+      return;
+    }
 
     try {
       await vincularPaciente({
-        monitorId: user.id,
+        monitorId,
         pacienteId: selectedPatient
       });
 
       alert("Paciente vinculado com sucesso!");
       setShowLinkModal(false);
       setSelectedPatient("");
-      fetchLinkedStudents(user.id); // Atualiza a lista
+      fetchLinkedStudents(monitorId); // Atualiza a lista
     } catch (error: any) {
+      console.error('[perfil/monitor] erro ao vincular paciente', error);
       alert(error.message);
     }
   };

@@ -106,3 +106,21 @@ export const getRelatorioStats = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+// Listar relatórios por paciente (rota: GET /api/relatorios/paciente/:id)
+export const getRelatoriosByPaciente = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('relatorios')
+      .select('*')
+      .eq('paciente_id', id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data);
+  } catch (error: any) {
+    console.error('Erro ao buscar relatórios por paciente:', error);
+    return res.status(500).json({ error: error.message || 'Erro desconhecido' });
+  }
+};

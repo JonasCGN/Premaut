@@ -31,6 +31,13 @@ export async function buscarPacientes() {
   return res.json();
 }
 
+// Buscar pacientes vinculados a um familiar (usuario_id)
+export async function buscarPacientesPorFamiliar(usuarioId: string) {
+  const res = await fetch(`${API_URL}/api/familia/${usuarioId}/pacientes`);
+  if (!res.ok) throw new Error('Erro ao buscar pacientes vinculados');
+  return res.json();
+}
+
 // Buscar dados para edição
 export async function buscarPacienteParaEdicao(id: string) {
   const res = await fetch(`${API_URL}/api/pacientes/editar/${id}`, {

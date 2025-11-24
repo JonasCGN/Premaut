@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import { 
     buscarPacienteParaEdicao, 
@@ -17,6 +17,7 @@ export default function EditScreenPaciente() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
 
+    const API_BASE = process.env.NEXT_PUBLIC_URL_API || 'http://localhost:3001';
     useEffect(() => {
         if (!id) {
             alert("ID do paciente não encontrado.");

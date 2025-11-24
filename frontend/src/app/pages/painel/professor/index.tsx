@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import TopBar from "@/app/components/TopBar";
+import { useRouter } from 'next/navigation';
+import TopBar from "@/app/components/TopBarComponent";
 import Icons from '@/app/components/assets/icons';
 import Image from '@/app/components/assets/images';
 import { buscarPacientes } from '../../../services/pacienteService';
@@ -15,6 +16,7 @@ type Paciente = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +91,7 @@ export default function HomePage() {
                     <img src={Icons.circuloPerfil} alt={`Foto de ${paciente.nome}`} />
                   </div>
                   <h1>{paciente.nome}</h1>
-                  <button className="submit-button">
+                  <button className="submit-button" onClick={() => router.push(`/perfil/paciente?id=${paciente.id}`)}>
                     Verificar perfil
                   </button>
                 </div>

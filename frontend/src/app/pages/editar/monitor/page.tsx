@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import TopBar from "@/app/components/TopBar";
+import TopBar from "@/app/components/TopBarComponent";
 import Image from '@/app/components/assets/images';
 import Icons from '@/app/components/assets/icons'; // Assuming back arrow is here or I'll use a text/svg
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 import { buscarMonitorParaEdicao, atualizarMonitor, Monitor } from '../../../services/monitorService';
 
 interface PerfilMonitorEdit {
@@ -24,25 +25,39 @@ export default function EditScreenMonitor() {
     const [formData, setFormData] = useState<PerfilMonitorEdit | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { isLoggedIn, user: authUser, loading: authLoading } = useAuth();
+    const [targetId, setTargetId] = useState<string | null>(null);
+
+    console.log('[editar/monitor] render state', { authLoading, isLoggedIn, authUser, targetQuery: searchParams?.get('id'), targetId });
 
     useEffect(() => {
-        const userData = localStorage.getItem("user");
-        if (!userData) {
-            router.push("/auth/login");
+        console.log('[editar/monitor] auth state', { authLoading, isLoggedIn, authUser });
+        if (authLoading) return;
+
+        if (!isLoggedIn || !authUser) {
+            router.push('/auth/login');
             return;
         }
 
-        const user = JSON.parse(userData);
-        if (user.tipo_usuario !== "monitor") {
-            alert("Acesso negado.");
-            router.push("/auth/login");
+        console.log('[editar/monitor] parsed user from context:', authUser);
+        // Permite que monitores e administradores acessem a edição do monitor
+        if (authUser.tipo_usuario !== 'monitor' && authUser.tipo_usuario !== 'admin') {
+            console.log('[editar/monitor] acesso negado - tipo_usuario:', authUser.tipo_usuario);
+            alert('Acesso negado.');
+            router.push('/auth/login');
             return;
         }
+
+        const idFromQuery = searchParams?.get('id');
+        const resolvedId = idFromQuery || authUser.id;
+        setTargetId(resolvedId);
 
         const fetchData = async () => {
             try {
+                console.log('[editar/monitor] fetching data for targetId:', resolvedId);
                 // Busca dados para edição
-                const data = await buscarMonitorParaEdicao(user.id);
+                const data = await buscarMonitorParaEdicao(resolvedId);
                 // Formata a data para DD/MM/YYYY se existir
                 const perfil = data.perfil;
                 if (perfil.nascimentoISO) {
@@ -59,7 +74,7 @@ export default function EditScreenMonitor() {
         };
 
         fetchData();
-    }, [router]);
+    }, [authLoading, isLoggedIn, authUser, searchParams, router]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         if (formData) {
@@ -86,9 +101,7 @@ export default function EditScreenMonitor() {
     const handleSave = async () => {
         if (!formData) return;
 
-        const userData = localStorage.getItem("user");
-        if (!userData) return;
-        const user = JSON.parse(userData);
+        const user = authUser;
 
         // Converte DD/MM/YYYY para YYYY-MM-DD
         let nascimentoISO = null;
@@ -105,7 +118,8 @@ export default function EditScreenMonitor() {
                 nascimento: nascimentoISO,
             };
 
-            await atualizarMonitor(user.id, monitorData);
+            const idToUpdate = targetId || authUser.id;
+            await atualizarMonitor(idToUpdate, monitorData);
             alert("Perfil atualizado com sucesso!");
             router.push("/perfil/monitor");
         } catch (error: any) {

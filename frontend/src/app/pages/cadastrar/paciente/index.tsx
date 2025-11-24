@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import TopBar from '@/app/components/TopBar';
+import TopBar from '@/app/components/TopBarComponent';
 import "./styles.css";
 import Image from "@/app/components/assets/images";
 import Icons from '../../../components/assets/icons';
@@ -20,7 +20,6 @@ export default function CadastroEvento() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log({ data, criador, localizacao, descricao });
     };
 
     return (
