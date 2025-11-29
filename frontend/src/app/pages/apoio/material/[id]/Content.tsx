@@ -13,6 +13,42 @@ export const MaterialDetalhe: React.FC = () => {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
+    const isValidUrl = (u?: string) => {
+        if (!u) return false;
+        try {
+            const parsed = new URL(u);
+            if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+            // evitar domínios de placeholder
+            if (parsed.hostname.includes('example.com')) return false;
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    const handleDownload = async () => {
+        if (!material?.url) return;
+        // tenta baixar via fetch -> blob (evita abrir placeholder)
+        try {
+            const res = await fetch(material.url);
+            if (!res.ok) throw new Error('Falha ao baixar arquivo');
+            const blob = await res.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = objectUrl;
+            const safeName = (material.nome || 'arquivo').replace(/[^a-z0-9_\-\.]/gi, '_');
+            a.download = `${safeName}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+            console.warn('Download falhou, abrindo em nova aba como fallback', err);
+            // fallback: abrir em nova aba
+            window.open(material.url, '_blank');
+        }
+    };
+
     React.useEffect(() => {
         buscarMateriais()
             .then((data) => {
@@ -94,7 +130,7 @@ export const MaterialDetalhe: React.FC = () => {
                     )}
                     {material.url && (
                         <button
-                            onClick={() => window.open(material.url, '_blank')}
+                            onClick={handleDownload}
                             style={{
                                 marginTop: '12px',
                                 padding: '8px 16px',
@@ -108,14 +144,14 @@ export const MaterialDetalhe: React.FC = () => {
                                 fontWeight: 600
                             }}
                         >
-                            Abrir PDF em nova aba
+                            Baixar PDF
                         </button>
                     )}
                 </div>
             </div>
             
             {/* Visualizador de PDF */}
-            {material.url && (
+            {material.url && isValidUrl(material.url) && (
                 <div className="mt-8 mx-8">
                     <h3 
                         style={{
@@ -152,8 +188,13 @@ export const MaterialDetalhe: React.FC = () => {
                         marginTop: '8px',
                         fontStyle: 'italic'
                     }}>
-                        Se o PDF não carregar acima, clique no botão "Abrir PDF em nova aba"
+                        Se o PDF não carregar acima, clique no botão "Baixar PDF" ou abra em nova aba
                     </p>
+                </div>
+            )}
+            {!isValidUrl(material.url) && (
+                <div style={{ padding: 16, color: '#666' }}>
+                    URL do material inválida ou de placeholder. Você pode tentar abrir em nova aba ou contatar o administrador.
                 </div>
             )}
         </div>

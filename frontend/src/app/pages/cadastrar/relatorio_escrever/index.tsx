@@ -76,6 +76,7 @@ export default function HomePage() {
 
       alert("Relatório salvo com sucesso!");
       console.log("✅ Relatório salvo:", await res.json());
+      router.back();
     } catch {
       alert("Erro ao salvar relatório");
     }
