@@ -43,7 +43,7 @@ export const createPaciente = async (req: Request, res: Response) => {
   const { 
     nome, genero, nivel_suporte, nascimento, comodidade, 
     telefone, email, remedios, estereotipia, reforco_positivo, reforco_negativo 
-  } = req.body;
+  , monitorId } = req.body;
 
   const { data, error } = await supabase
     .from('pacientes')
@@ -54,7 +54,27 @@ export const createPaciente = async (req: Request, res: Response) => {
     .select();
 
   if (error) return res.status(500).json({ error: error.message });
-  return res.status(201).json(data[0]);
+
+  const paciente = data[0];
+
+  // Se foi informado monitorId, tenta criar o vínculo na tabela de junção
+  if (monitorId && paciente && paciente.id) {
+    const { error: linkError } = await supabase
+      .from('Monitor_Pacientes')
+      .insert([{ monitor_id: monitorId, paciente_id: paciente.id }]);
+
+    if (linkError) {
+      // Se houve erro ao vincular, tenta reverter a criação do paciente para manter consistência
+      try {
+        await supabase.from('pacientes').delete().eq('id', paciente.id);
+      } catch (delErr) {
+        console.error('Falha ao reverter paciente após erro de vínculo:', delErr);
+      }
+      return res.status(500).json({ error: 'Erro ao vincular paciente ao monitor.' });
+    }
+  }
+
+  return res.status(201).json(paciente);
 };
 
 export const updatePaciente = async (req: Request, res: Response) => {

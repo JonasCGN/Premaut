@@ -117,7 +117,13 @@ export default function ScreenMonitor() {
   };
 
   const handleCadastrarClick = () => {
-    router.push("/cadastrar/paciente");
+    const idFromQuery = searchParams?.get('id');
+    const targetId = idFromQuery || user?.id;
+    if (!targetId) {
+      console.error('[perfil/monitor] handleCadastrarClick: missing monitor id');
+      return;
+    }
+    router.push(`/cadastrar/paciente?monitorId=${targetId}`);
   };
 
   const handleVincularClick = async () => {

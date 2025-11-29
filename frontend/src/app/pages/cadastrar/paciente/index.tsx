@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSearchParams } from 'next/navigation';
 import TopBar from '@/app/components/TopBarComponent';
 import "./styles.css";
 import Image from "@/app/components/assets/images";
@@ -22,9 +23,9 @@ export default function CadastroEvento() {
     const [telefone, setTelefone] = useState("");
     const [email, setEmail] = useState("");
 
-
-
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const monitorId = searchParams.get('monitorId');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,6 +45,7 @@ export default function CadastroEvento() {
             estereotipia,
             reforco_positivo: reforcoPositivo,
             reforco_negativo: reforcoNegativo,
+            monitorId: monitorId,
         };
 
         try {
@@ -62,7 +64,7 @@ export default function CadastroEvento() {
             const created = await res.json();
             const newId = created.id || (created[0] && created[0].id) || null;
             alert('Paciente cadastrado com sucesso!');
-            if (newId) router.push(`/perfil/paciente?id=${newId}`);
+            if (newId) router.push(`/perfil/monitor?id=${monitorId}`);
             else router.push('/painel');
         } catch (error) {
             console.error('Erro ao cadastrar paciente', error);
