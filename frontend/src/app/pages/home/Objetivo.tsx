@@ -101,9 +101,8 @@ export const Objetivo: React.FC = () => {
                 >
                     Como o PREMAUT é um projeto de apoio a pessoas com autismo, as atividades podem ser adaptadas para trabalhar aspectos educacionais, sociais, emocionais e de integração comunitária. Aqui vai uma lista de sugestões que você pode usar ou ajustar conforme a proposta do projeto:
                 </p>
-                <button
-                    type="button"
-                    className="px-4 py-3 text-white rounded flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                <div
+                    className="px-4 py-3 text-white rounded flex items-center gap-2 hover:opacity-90 transition-opacity"
                     aria-label="Ver todas as atividades"
                     style={{
                         backgroundColor: Colors.verdeBase,
@@ -123,7 +122,7 @@ export const Objetivo: React.FC = () => {
                         Todas as atividades
                     </span>
                     <img src={Icons.mdi_arrow} alt="Flecha" aria-hidden="true" className="w-4 h-4" />
-                </button>
+                </div>
             </div>
             
             {/* Seção de atividades */}
