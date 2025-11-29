@@ -24,6 +24,8 @@ function AdminContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const filterOptions = [
     "PACIENTE",
@@ -199,22 +201,30 @@ function AdminContent() {
                     {openMenuUserId === user.id && (
                       <div className="absolute top-8 right-0 bg-white rounded-lg shadow-xl z-10 overflow-hidden min-w-[120px]">
                         <button
-                          className="w-full py-3 px-4 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 border-b border-gray-200"
+                          className="w-full py-3 px-4 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 border-b border-gray-200 cursor-pointer"
                           onClick={() => {
-                            console.log('Editar usuário:', user);
                             setOpenMenuUserId(null);
-                            // Adicionar lógica de edição aqui
+                            // Navega para a tela de edição baseada no tipo do usuário
+                            const tipo = user.tipo_usuario?.toLowerCase();
+                            let editPath = '/editar/usuario';
+                            
+                            if (tipo === 'comum' || tipo === 'paciente') editPath = '/editar/paciente';
+                            else if (tipo === 'monitor') editPath = '/editar/monitor';
+                            else if (tipo === 'professor') editPath = '/editar/professor';
+                            else if (tipo === 'familia' || tipo === 'familiar') editPath = '/editar/familia';
+                            
+                            router.push(`${editPath}?id=${user.id}`);
                           }}
                         >
                           Editar
                         </button>
                         
                         <button
-                          className="w-full py-3 px-4 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+                          className="w-full py-3 px-4 text-left text-sm font-medium text-red-600 hover:bg-red-50 cursor-pointer"
                           onClick={() => {
-                            console.log('Excluir usuário:', user);
                             setOpenMenuUserId(null);
-                            // Adicionar lógica de exclusão aqui
+                            setUserToDelete(user);
+                            setShowDeleteConfirm(true);
                           }}
                         >
                           Excluir
@@ -268,6 +278,46 @@ function AdminContent() {
           </div>
         )}
       </main>
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Confirmar Exclusão
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Deseja realmente excluir o usuário <strong>{userToDelete.nome}</strong>? 
+              Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setUserToDelete(null);
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                onClick={() => {
+                  console.log('Confirmando exclusão do usuário:', userToDelete);
+                  // Aqui você pode adicionar a lógica de exclusão do usuário
+                  // Exemplo: await excluirUsuario(userToDelete.id);
+                  setShowDeleteConfirm(false);
+                  setUserToDelete(null);
+                  // Refresh da lista de usuários após exclusão
+                  fetchUsers(selectedFilter, searchTerm);
+                }}
+              >
+                Sim, desejo excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

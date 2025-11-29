@@ -16,6 +16,7 @@ import eventosRoutes from "./routes/eventosRoutes";
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 app.use('/api', routes);
 app.use("/api/monitor", monitorRouter);
 app.use('/api/relatorios', relatorioRoutes);
