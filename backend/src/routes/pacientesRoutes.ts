@@ -4,7 +4,8 @@ import {
   getPacienteById,
   createPaciente,
   updatePaciente,
-  removePaciente
+  removePaciente,
+  excluirPaciente
 } from '../controllers/pacientesController';
 import { getPacienteEditData, savePacienteEditData } from '../controllers/pacienteEditController';
 
@@ -15,6 +16,7 @@ router.get('/:id', getPacienteById);
 router.post('/', createPaciente);
 router.put('/:id', updatePaciente);
 router.delete('/:id', removePaciente);
+router.delete('/excluir/:id', excluirPaciente);
 
 // Rotas específicas para a tela de edição (se precisar de formatação especial)
 router.get('/editar/:id', getPacienteEditData);

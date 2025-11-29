@@ -72,3 +72,51 @@ export async function buscarUsuarios(params: BuscarUsuariosParams): Promise<Usua
   if (!res.ok) throw new Error('Erro ao buscar usuários');
   return res.json();
 }
+
+// Excluir usuário por ID
+export async function excluirUsuario(id: string): Promise<{ message: string; usuario: Usuario }> {
+  const res = await fetch(`${API_URL}/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = 'Erro ao excluir usuário';
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.error || errorMessage;
+    } catch {
+      errorMessage = errorText || errorMessage;
+    }
+    throw new Error(`${errorMessage} (Status: ${res.status})`);
+  }
+  
+  return res.json();
+}
+
+// Excluir paciente por ID (para professores)
+export async function excluirPaciente(id: string): Promise<{ message: string }> {
+  const res = await fetch(`${PACIENTES_API_URL}/excluir/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = 'Erro ao excluir paciente';
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.error || errorMessage;
+    } catch {
+      errorMessage = errorText || errorMessage;
+    }
+    throw new Error(`${errorMessage} (Status: ${res.status})`);
+  }
+  
+  return res.json();
+}

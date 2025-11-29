@@ -4,7 +4,7 @@ import TopBar from "@/app/components/TopBarComponent";
 import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
-import { listarUsuarios, buscarUsuarios, Usuario } from "../../../services/adminService";
+import { listarUsuarios, buscarUsuarios, Usuario, excluirUsuario } from "../../../services/adminService";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useRouter } from 'next/navigation';
 
@@ -302,14 +302,20 @@ function AdminContent() {
               </button>
               <button
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                onClick={() => {
-                  console.log('Confirmando exclusão do usuário:', userToDelete);
-                  // Aqui você pode adicionar a lógica de exclusão do usuário
-                  // Exemplo: await excluirUsuario(userToDelete.id);
-                  setShowDeleteConfirm(false);
-                  setUserToDelete(null);
-                  // Refresh da lista de usuários após exclusão
-                  fetchUsers(selectedFilter, searchTerm);
+                onClick={async () => {
+                  try {
+                    console.log('Confirmando exclusão do usuário:', userToDelete);
+                    await excluirUsuario(userToDelete.id);
+                    
+                    // Atualiza a lista removendo o usuário excluído
+                    setUsuarios(prev => prev.filter(u => u.id !== userToDelete.id));
+                    
+                    setShowDeleteConfirm(false);
+                    setUserToDelete(null);
+                  } catch (error) {
+                    console.error('Erro ao excluir usuário:', error);
+                    alert('Erro ao excluir usuário. Tente novamente.');
+                  }
                 }}
               >
                 Sim, desejo excluir

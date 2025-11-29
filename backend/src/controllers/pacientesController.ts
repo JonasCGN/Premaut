@@ -75,12 +75,131 @@ export const updatePaciente = async (req: Request, res: Response) => {
 export const removePaciente = async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const { error, count } = await supabase
+  // Primeiro busca o paciente para retornar os dados
+  const { data: paciente, error: buscarError } = await supabase
     .from('pacientes')
-    .delete({ count: 'exact' })
-    .eq('id', id);
+    .select('id, nome')
+    .eq('id', id)
+    .maybeSingle();
 
-  if (error) return res.status(500).json({ error: error.message });
-  if (count === 0) return res.status(404).json({ error: 'Paciente não encontrado' });
-  return res.status(204).send();
+  if (buscarError) {
+    console.error('[removePaciente] Erro ao buscar:', buscarError);
+    return res.status(500).json({ error: buscarError.message });
+  }
+
+  if (!paciente) {
+    return res.status(404).json({ error: 'Paciente não encontrado' });
+  }
+
+  try {
+    // Primeiro exclui todos os relatórios do paciente
+    const { error: relatoriosError } = await supabase
+      .from('relatorios')
+      .delete()
+      .eq('paciente_id', id);
+
+    if (relatoriosError) {
+      console.error('[removePaciente] Erro ao excluir relatórios:', relatoriosError);
+      return res.status(500).json({ error: 'Erro ao excluir relatórios do paciente' });
+    }
+
+    // Agora remove o paciente
+    const { error: pacienteError, count } = await supabase
+      .from('pacientes')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+
+    if (pacienteError) {
+      console.error('[removePaciente] Erro na exclusão do paciente:', pacienteError);
+      return res.status(500).json({ error: pacienteError.message });
+    }
+
+    if (count === 0) {
+      return res.status(404).json({ error: 'Paciente não encontrado' });
+    }
+
+    return res.status(200).json({ 
+      message: 'Paciente e seus relatórios excluídos com sucesso',
+      paciente: {
+        id: paciente.id,
+        nome: paciente.nome
+      }
+    });
+
+  } catch (error: any) {
+    console.error('[removePaciente] Erro inesperado:', error);
+    return res.status(500).json({ error: 'Erro interno no servidor' });
+  }
 };
+
+// Função para excluir paciente (Professor)
+export async function excluirPaciente(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "ID do paciente é obrigatório." });
+    }
+
+    // Verifica se o paciente existe antes de excluir
+    const { data: paciente, error: buscarError } = await supabase
+      .from("pacientes")
+      .select("id, nome")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (buscarError) {
+      console.error("Erro ao buscar paciente:", buscarError);
+      return res.status(500).json({ error: "Erro ao buscar paciente." });
+    }
+
+    if (!paciente) {
+      return res.status(404).json({ error: "Paciente não encontrado." });
+    }
+
+    // Excluir dependências em ordem
+    try {
+      // 1. Excluir relações monitor-pacientes
+      await supabase.from("Monitor_Pacientes").delete().eq("paciente_id", id);
+      
+      // 2. Excluir relações família-paciente
+      await supabase.from("familia_paciente").delete().eq("paciente_id", id);
+      
+      // 3. Excluir todos os relatórios associados ao paciente
+      const { error: excluirRelatoriosError } = await supabase
+        .from("relatorios")
+        .delete()
+        .eq("paciente_id", id);
+
+      if (excluirRelatoriosError) {
+        console.error("Erro ao excluir relatórios do paciente:", excluirRelatoriosError);
+        return res.status(500).json({ error: "Erro ao excluir relatórios do paciente." });
+      }
+
+      // 4. Finalmente, exclui o paciente
+      const { error: excluirError } = await supabase
+        .from("pacientes")
+        .delete()
+        .eq("id", id);
+
+      if (excluirError) {
+        console.error("Erro ao excluir paciente:", excluirError);
+        return res.status(500).json({ error: "Erro ao excluir paciente." });
+      }
+
+      return res.status(200).json({ 
+        message: "Paciente e todas as suas dependências excluídos com sucesso.",
+        paciente: {
+          id: paciente.id,
+          nome: paciente.nome
+        }
+      });
+    } catch (deleteError) {
+      console.error("Erro durante a exclusão:", deleteError);
+      return res.status(500).json({ error: "Erro ao excluir dependências do paciente." });
+    }
+  } catch (error) {
+    console.error("Erro inesperado ao excluir paciente:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}

@@ -8,6 +8,7 @@ import {
   listarUsuarios,
   buscarUsuarios,
   validarUsuario,
+  excluirUsuario,
 } from "../controllers/usuariosController";
 
 const router = express.Router();
@@ -39,6 +40,13 @@ router.get("/listar", listarUsuarios);
  * @access Privado (Admin)
  */
 router.get("/buscar", buscarUsuarios);
+
+/**
+ * @route DELETE /api/usuarios/:id
+ * @desc Excluir usuário por ID
+ * @access Privado (Admin/Professor)
+ */
+router.delete("/:id", excluirUsuario);
 
 /**
  * @route POST /api/usuarios/esqueci-senha

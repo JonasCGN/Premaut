@@ -4,7 +4,7 @@ import TopBar from "@/app/components/TopBarComponent";
 import Icons from "@/app/components/assets/icons";
 import Image from "@/app/components/assets/images";
 import NextImage from "next/image";
-import { listarUsuarios, buscarUsuarios, Usuario } from "../../../services/adminService";
+import { listarUsuarios, buscarUsuarios, Usuario, excluirUsuario, excluirPaciente } from "../../../services/adminService";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useRouter } from 'next/navigation';
 
@@ -229,7 +229,10 @@ function ProfessorContent() {
               Confirmar Exclusão
             </h2>
             <p className="text-gray-600 mb-6">
-              Deseja realmente excluir o usuário <strong>{userToDelete.nome}</strong>? 
+              Deseja realmente excluir o paciente <strong>{userToDelete.nome}</strong>?<br/>
+              <span className="text-red-600 font-semibold">
+                ⚠️ Todos os relatórios deste paciente também serão excluídos permanentemente.
+              </span><br/>
               Esta ação não pode ser desfeita.
             </p>
             <div className="flex gap-3 justify-end">
@@ -244,14 +247,21 @@ function ProfessorContent() {
               </button>
               <button
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                onClick={() => {
-                  console.log('Confirmando exclusão do usuário:', userToDelete);
-                  // Aqui você pode adicionar a lógica de exclusão do usuário
-                  // Exemplo: await excluirUsuario(userToDelete.id);
-                  setShowDeleteConfirm(false);
-                  setUserToDelete(null);
-                  // Refresh da lista de usuários após exclusão
-                  fetchUsers(selectedFilter, searchTerm);
+                onClick={async () => {
+                  try {
+                    await excluirPaciente(userToDelete.id);
+                    
+                    // Atualiza a lista removendo o usuário excluído
+                    setUsuarios(prev => prev.filter(u => u.id !== userToDelete.id));
+                    
+                    alert(`Paciente ${userToDelete.nome} excluído com sucesso!`);
+                    
+                    setShowDeleteConfirm(false);
+                    setUserToDelete(null);
+                  } catch (error: any) {
+                    const mensagem = error.message || 'Erro desconhecido ao excluir paciente';
+                    alert(`Erro ao excluir paciente: ${mensagem}`);
+                  }
                 }}
               >
                 Sim, desejo excluir

@@ -320,6 +320,89 @@ export async function validarUsuario(req: Request, res: Response) {
   }
 }
 
+// Função para excluir usuário (para admin e professor)
+export async function excluirUsuario(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório." });
+    }
+
+    // Verifica se o usuário existe antes de excluir
+    const { data: usuario, error: buscarError } = await supabase
+      .from("Usuarios")
+      .select("id, nome, tipo_usuario")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (buscarError) {
+      console.error("Erro ao buscar usuário:", buscarError);
+      return res.status(500).json({ error: "Erro ao buscar usuário." });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    // Excluir dependências em ordem (das mais específicas para as menos específicas)
+    try {
+      // 1. Excluir dados de recuperação de senha
+      await supabase.from("RecuperacaoSenha").delete().eq("usuario_id", id);
+      
+      // 2. Excluir relações família-paciente
+      await supabase.from("familia_paciente").delete().eq("usuario_id", id);
+      
+      // 3. Excluir relações monitor-pacientes
+      await supabase.from("Monitor_Pacientes").delete().eq("monitor_id", id);
+      
+      // 4. Excluir relações professor-arquivos
+      await supabase.from("Professor_Arquivos").delete().eq("professor_id", id);
+      
+      // 5. Excluir relações professor-eventos
+      await supabase.from("Professor_Eventos").delete().eq("professor_id", id);
+      
+      // 6. Excluir relações professor-monitores (como professor)
+      await supabase.from("Professor_Monitores").delete().eq("professor_id", id);
+      
+      // 7. Excluir relações professor-monitores (como monitor)
+      await supabase.from("Professor_Monitores").delete().eq("monitor_id", id);
+      
+      // 8. Excluir dados específicos do monitor
+      await supabase.from("DadosMonitor").delete().eq("usuario_id", id);
+      
+      // 9. Excluir dados específicos do professor
+      await supabase.from("DadosProfessor").delete().eq("id_professor", id);
+
+      // 10. Finalmente, exclui o usuário
+      const { error: excluirError } = await supabase
+        .from("Usuarios")
+        .delete()
+        .eq("id", id);
+
+      if (excluirError) {
+        console.error("Erro ao excluir usuário:", excluirError);
+        return res.status(500).json({ error: "Erro ao excluir usuário." });
+      }
+
+      return res.status(200).json({ 
+        message: "Usuário e todas as suas dependências excluídos com sucesso.",
+        usuario: {
+          id: usuario.id,
+          nome: usuario.nome,
+          tipo_usuario: usuario.tipo_usuario
+        }
+      });
+    } catch (deleteError) {
+      console.error("Erro durante a exclusão:", deleteError);
+      return res.status(500).json({ error: "Erro ao excluir dependências do usuário." });
+    }
+  } catch (error) {
+    console.error("Erro inesperado ao excluir usuário:", error);
+    return res.status(500).json({ error: "Erro interno no servidor." });
+  }
+}
+
 export async function redefinirSenha(req: Request, res: Response) {
   try {
     const { email, codigo, novaSenha } = req.body;
@@ -328,9 +411,6 @@ export async function redefinirSenha(req: Request, res: Response) {
       return res.status(400).json({ error: "E-mail, código e nova senha são obrigatórios." });
     }
 
-    console.log(`[redefinirSenha] email=${email} codigo=${codigo}`);
-
- 
     const { data: usuario, error: usuarioErr } = await supabase
       .from("Usuarios")
       .select("id")

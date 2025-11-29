@@ -5,10 +5,8 @@ import { supabase } from "../services/supabaseClient";
 export async function getPerfilMonitor(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    console.log(`[getPerfilMonitor] Request received for ID: ${id}`);
 
     if (!id) {
-      console.log("[getPerfilMonitor] ID missing");
       return res.status(400).json({ error: "ID obrigatório." });
     }
 
@@ -19,10 +17,7 @@ export async function getPerfilMonitor(req: Request, res: Response) {
       .eq("tipo_usuario", "monitor")
       .single();
 
-    console.log(`[getPerfilMonitor] Supabase result for ID ${id}:`, { usuario, error });
-
     if (error || !usuario) {
-      console.log("[getPerfilMonitor] User not found or error:", error);
       return res.status(403).json({ error: "Acesso negado ou usuário não encontrado." });
     }
 
