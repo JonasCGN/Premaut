@@ -38,9 +38,8 @@ export function useUserRedirect() {
 
   const canAccessPanel = () => {
     if (!isLoggedIn || !user) return false;
-    
-    // Pacientes não têm acesso ao painel
-    return user.tipo_usuario !== 'paciente';
+    // Só admin, professor e monitor podem ver o painel
+    return ['admin', 'professor', 'monitor'].includes(user.tipo_usuario);
   };
 
   const getUserDashboardPath = () => {
