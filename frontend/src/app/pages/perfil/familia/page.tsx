@@ -221,7 +221,12 @@ function ScreenFamillyContent() {
               </span>
             </div>
 
-            <button className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-emerald-400 text-emerald-700 rounded-full px-4 py-2 text-sm hover:bg-emerald-50 transition">
+            <button 
+              className="mt-4 md:mt-0 flex items-center gap-2 bg-white border border-emerald-400 text-emerald-700 rounded-full px-4 py-2 text-sm hover:bg-emerald-50 transition"
+              style={{
+                cursor:"pointer"
+              }}
+            >
               <img src={Icons.lapisVerde} alt="Editar" className="w-4 h-4" />
               Editar perfil
             </button>

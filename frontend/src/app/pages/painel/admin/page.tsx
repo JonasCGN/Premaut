@@ -23,6 +23,7 @@ function AdminContent() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
 
   const filterOptions = [
     "PACIENTE",
@@ -173,18 +174,54 @@ function AdminContent() {
               usuarios.map((user, index) => (
                 <div
                   key={user.id}
-                  className="relative bg-white rounded-3xl shadow-xl p-10 w-80 h-96 flex flex-col items-center transition-transform hover:scale-[1.03]"
+                  className="relative bg-white rounded-3xl shadow-xl p-10 w-80 h-96 flex flex-col items-center transition-transform"
                 >
                   {/* Ícone três pontos */}
-                  <button className="absolute top-5 right-5">
-                    <NextImage
-                      src={Icons.icone_3pontos}
-                      alt="Opções"
-                      width={8}
-                      height={28}
-                      className="object-contain"
-                    />
-                  </button>
+                  <div className="absolute top-5 right-5">
+                    <button 
+                      onClick={() => {
+                        setOpenMenuUserId(openMenuUserId === user.id ? null : user.id);
+                      }}
+                    >
+                      <NextImage
+                        src={Icons.icone_3pontos}
+                        alt="Opções"
+                        width={8}
+                        height={28}
+                        className="object-contain"
+                        style={{ 
+                          cursor: "pointer" 
+                        }}
+                      />
+                    </button>
+                    
+                    {/* Menu dropdown */}
+                    {openMenuUserId === user.id && (
+                      <div className="absolute top-8 right-0 bg-white rounded-lg shadow-xl z-10 overflow-hidden min-w-[120px]">
+                        <button
+                          className="w-full py-3 px-4 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 border-b border-gray-200"
+                          onClick={() => {
+                            console.log('Editar usuário:', user);
+                            setOpenMenuUserId(null);
+                            // Adicionar lógica de edição aqui
+                          }}
+                        >
+                          Editar
+                        </button>
+                        
+                        <button
+                          className="w-full py-3 px-4 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            console.log('Excluir usuário:', user);
+                            setOpenMenuUserId(null);
+                            // Adicionar lógica de exclusão aqui
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Foto de perfil */}
                   <NextImage
@@ -203,6 +240,9 @@ function AdminContent() {
                   {/* Botão */}
                   <button
                     className="bg-[#009B9E] text-white rounded-full px-6 py-3 text-base font-semibold shadow-md hover:bg-[#007f80] transition"
+                    style={{
+                      cursor: "pointer"
+                    }}
                     onClick={() => {
                       // Direciona para o tipo de perfil correspondente ao filtro atual
                       const tipo = String(selectedFilter).toUpperCase();
