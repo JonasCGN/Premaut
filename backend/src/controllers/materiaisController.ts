@@ -115,17 +115,25 @@ export const uploadArquivo = async (req: Request, res: Response) => {
   });
 
   try {
-    console.log('☁️ Uploading to Supabase storage...');
+  console.log('☁️ Uploading to Supabase storage...');
 
-    // Adiciona timestamp ao nome do arquivo para evitar conflitos
-    const timestamp = Date.now();
-    const fileExtension = file.originalname.split('.').pop();
-    const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
-    const uniqueFileName = `${fileNameWithoutExt}_${timestamp}.${fileExtension}`;
+  const timestamp = Date.now();
+  const fileExtension = file.originalname.split('.').pop();
 
-    const { data, error } = await supabase.storage
-      .from('arquivos')
-      .upload(`uploads/${uniqueFileName}`, file.buffer, { upsert: true });
+  const originalNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
+  const sanitizedName = originalNameWithoutExt
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "_");
+
+  const uniqueFileName = `${sanitizedName}_${timestamp}.${fileExtension}`;
+
+  const { data, error } = await supabase.storage
+    .from('arquivos')
+    .upload(`uploads/${uniqueFileName}`, file.buffer, { 
+        upsert: true,
+        contentType: file.mimetype 
+    });
 
     if (error) {
       console.error('❌ Supabase upload error:', error);
