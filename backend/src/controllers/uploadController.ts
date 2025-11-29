@@ -7,7 +7,7 @@ export const uploadArquivo = async (req: Request, res: Response) => {
 
   const { data, error } = await supabase.storage
     .from('arquivos')
-    .upload(`uploads/${file.originalname}`, file.buffer, { upsert: false });
+    .upload(`uploads/${file.originalname}`, file.buffer, { upsert: false, contentType: file.mimetype });
 
   if (error) return res.status(500).json({ error: error.message });
 
