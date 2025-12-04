@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 
@@ -143,16 +144,19 @@ export const MateriaisApoio: React.FC = () => {
                                         overflow: 'hidden',
                                     }}
                                 >
-                                    <img
-                                        src={item.capa_url}
-                                        alt={item.nome}
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            objectFit: 'contain',
-                                            display: 'block',
-                                        }}
-                                    />
+                                    {item.capa_url ? (
+                                        <img
+                                            src={item.capa_url}
+                                            alt={item.nome}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'contain',
+                                                display: 'block',
+                                            }}
+                                        />
+                                    ) : null}
+
                                     {item.qtd_paginas && (
                                         <div
                                             className="absolute items-center pointer-events-none z-10"
